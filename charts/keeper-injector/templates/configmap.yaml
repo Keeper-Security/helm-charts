@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "keeper-injector.fullname" . }}-config
+  labels:
+    {{- include "keeper-injector.labels" . | nindent 4 }}
+data:
+  excluded-namespaces: {{ .Values.excludedNamespaces | join "," | quote }}
+  default-refresh-interval: {{ .Values.defaults.refreshInterval | quote }}
+  default-fail-on-error: {{ .Values.defaults.failOnError | quote }}
+  {{- if .Values.defaults.authSecretName }}
+  default-auth-secret: {{ .Values.defaults.authSecretName | quote }}
+  {{- end }}

@@ -1,0 +1,236 @@
+# Keeper Secrets Injector Helm Values
+# For full documentation, see: https://docs.keeper.io/k8s/injector
+
+# -- Number of webhook replicas
+replicaCount: 2
+
+# Webhook controller image
+image:
+  # -- Image repository
+  repository: keeper/injector-webhook
+  # -- Image pull policy
+  pullPolicy: IfNotPresent
+  # -- Image tag (defaults to chart appVersion)
+  tag: ""
+
+# Sidecar agent image (injected into pods)
+sidecar:
+  # -- Sidecar image repository
+  repository: keeper/injector-sidecar
+  # -- Sidecar image tag
+  tag: ""
+  # -- Sidecar image pull policy
+  pullPolicy: IfNotPresent
+
+# -- Image pull secrets
+imagePullSecrets: []
+
+# -- Override chart name
+nameOverride: ""
+
+# -- Override full name
+fullnameOverride: ""
+
+# Namespace management
+namespaceManagement:
+  # -- Create namespace (set to false if namespace already exists)
+  createNamespace: true
+  # -- Label namespace to prevent self-injection
+  labelNamespace: true
+  # -- Additional labels for the namespace
+  additionalLabels: {}
+  # -- Annotations for the namespace
+  annotations: {}
+
+# Service account configuration
+serviceAccount:
+  # -- Create service account
+  create: true
+  # -- Service account annotations
+  annotations: {}
+  # -- Service account name (generated if not set)
+  name: ""
+
+# RBAC configuration
+rbac:
+  # -- Create RBAC resources
+  create: true
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65534
+  fsGroup: 65534
+
+# Container security context
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 65534
+  capabilities:
+    drop:
+      - ALL
+
+# Webhook service configuration
+service:
+  # -- Service type
+  type: ClusterIP
+  # -- Service port
+  port: 443
+
+# Resource limits and requests
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+# Sidecar resource configuration (injected into pods)
+sidecarResources:
+  limits:
+    cpu: 50m
+    memory: 64Mi
+  requests:
+    cpu: 10m
+    memory: 32Mi
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity rules
+affinity: {}
+
+# Webhook configuration
+webhook:
+  # -- Webhook port
+  port: 9443
+  # -- Failure policy: Fail or Ignore
+  failurePolicy: Fail
+  # -- Timeout seconds for webhook calls
+  timeoutSeconds: 10
+  # -- Reinvocation policy: Never or IfNeeded
+  reinvocationPolicy: Never
+
+# TLS configuration
+# Three modes available:
+# 1. Auto-TLS (default): Certificates auto-generated using kube-webhook-certgen
+#    - No external dependencies required
+#    - Set: autoGenerate=true, certManager.enabled=false
+# 2. cert-manager: Use cert-manager for certificate lifecycle management
+#    - Requires cert-manager installed in cluster
+#    - Set: autoGenerate=true, certManager.enabled=true
+# 3. Manual: Provide your own certificates
+#    - For advanced use cases or custom CA requirements
+#    - Set: autoGenerate=false, provide certificate values below
+tls:
+  # -- Auto-generate certificates using built-in mechanism or cert-manager
+  autoGenerate: true
+  # -- Use cert-manager for certificate management (optional, requires cert-manager installed)
+  certManager:
+    enabled: false
+    # -- Issuer kind: Issuer or ClusterIssuer
+    issuerKind: Issuer
+    # -- Issuer name (created by chart if not specified)
+    issuerName: ""
+  # -- Manual certificate configuration (only used when autoGenerate is false)
+  certificate:
+    # -- TLS certificate (base64 encoded)
+    crt: ""
+    # -- TLS private key (base64 encoded)
+    key: ""
+    # -- CA certificate (base64 encoded)
+    ca: ""
+
+# Namespace selector for webhook
+namespaceSelector:
+  # -- Match expressions for namespace selection
+  matchExpressions:
+    - key: keeper.security/inject
+      operator: NotIn
+      values:
+        - disabled
+
+# Namespaces to exclude from injection
+excludedNamespaces:
+  - kube-system
+  - kube-public
+  - kube-node-lease
+  - cert-manager
+
+# Default injection settings
+defaults:
+  # -- Default auth secret name (optional)
+  authSecretName: ""
+  # -- Default refresh interval
+  refreshInterval: "5m"
+  # -- Default behavior on error
+  failOnError: true
+
+# Logging configuration
+logging:
+  # -- Log level: debug, info, warn, error
+  level: info
+  # -- Log format: json or text
+  format: json
+
+# Metrics configuration
+metrics:
+  # -- Enable Prometheus metrics
+  enabled: true
+  # -- Metrics port
+  port: 8080
+  # -- ServiceMonitor for Prometheus Operator
+  serviceMonitor:
+    enabled: false
+    # -- ServiceMonitor namespace (defaults to release namespace)
+    namespace: ""
+    # -- ServiceMonitor labels
+    labels: {}
+    # -- Scrape interval
+    interval: 30s
+
+# Leader election for HA
+leaderElection:
+  # -- Enable leader election
+  enabled: true
+  # -- Lease duration
+  leaseDuration: 15s
+  # -- Renew deadline
+  renewDeadline: 10s
+  # -- Retry period
+  retryPeriod: 2s
+
+# Pod disruption budget
+podDisruptionBudget:
+  # -- Enable PDB
+  enabled: true
+  # -- Minimum available pods
+  minAvailable: 1
+
+# Health probes
+probes:
+  liveness:
+    # -- Initial delay seconds
+    initialDelaySeconds: 15
+    # -- Period seconds
+    periodSeconds: 20
+  readiness:
+    # -- Initial delay seconds
+    initialDelaySeconds: 5
+    # -- Period seconds
+    periodSeconds: 10
+
+# Priority class name
+priorityClassName: ""
+
+# Topology spread constraints
+topologySpreadConstraints: []

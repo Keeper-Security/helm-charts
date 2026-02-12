@@ -1,0 +1,49 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: {{ include "keeper-injector.fullname" . }}
+  labels:
+    {{- include "keeper-injector.labels" . | nindent 4 }}
+  {{- if and .Values.tls.autoGenerate .Values.tls.certManager.enabled }}
+  annotations:
+    cert-manager.io/inject-ca-from: {{ .Release.Namespace }}/{{ include "keeper-injector.certSecretName" . }}
+  {{- end }}
+webhooks:
+  - name: pods.keeper.security
+    admissionReviewVersions:
+      - v1
+    clientConfig:
+      service:
+        name: {{ include "keeper-injector.webhookServiceName" . }}
+        namespace: {{ .Release.Namespace }}
+        path: /mutate-pods
+        port: {{ .Values.service.port }}
+      {{- if not .Values.tls.autoGenerate }}
+      caBundle: {{ .Values.tls.certificate.ca }}
+      {{- end }}
+    failurePolicy: {{ .Values.webhook.failurePolicy }}
+    matchPolicy: Equivalent
+    reinvocationPolicy: {{ .Values.webhook.reinvocationPolicy }}
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+        resources:
+          - pods
+        scope: Namespaced
+    sideEffects: None
+    timeoutSeconds: {{ .Values.webhook.timeoutSeconds }}
+    namespaceSelector:
+      {{- with .Values.namespaceSelector.matchExpressions }}
+      matchExpressions:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    objectSelector:
+      matchExpressions:
+        - key: keeper.security/inject
+          operator: NotIn
+          values:
+            - "false"

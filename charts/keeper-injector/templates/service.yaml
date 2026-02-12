@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "keeper-injector.webhookServiceName" . }}
+  labels:
+    {{- include "keeper-injector.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: webhook
+      protocol: TCP
+      name: https
+  selector:
+    {{- include "keeper-injector.selectorLabels" . | nindent 4 }}
+---
+{{- if .Values.metrics.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "keeper-injector.fullname" . }}-metrics
+  labels:
+    {{- include "keeper-injector.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.metrics.port }}
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+  selector:
+    {{- include "keeper-injector.selectorLabels" . | nindent 4 }}
+{{- end }}

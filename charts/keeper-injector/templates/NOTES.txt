@@ -1,0 +1,59 @@
+Keeper Secrets Injector {{ .Chart.Version }} has been successfully installed!
+
+Release Name: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+
+To verify the installation:
+  kubectl get pods -n {{ .Release.Namespace }}
+
+{{- if .Values.namespaceManagement.createNamespace }}
+{{- if .Values.namespaceManagement.labelNamespace }}
+
+The {{ .Release.Namespace }} namespace has been labeled with 'keeper.security/inject=disabled'
+to prevent the webhook from intercepting its own pods.
+{{- end }}
+{{- end }}
+
+{{- if and .Values.tls.autoGenerate (not .Values.tls.certManager.enabled) }}
+
+TLS: Auto-generated certificates (no cert-manager required)
+{{- else if and .Values.tls.autoGenerate .Values.tls.certManager.enabled }}
+
+TLS: Using cert-manager for certificate management
+{{- else }}
+
+TLS: Manual certificates provided
+{{- end }}
+
+Secrets will be written to: /keeper/secrets/
+Format: JSON (default) or configurable via annotations
+Example: /keeper/secrets/database-credentials.json
+
+Available formats:
+- JSON (default): keeper.security/format: "json"
+- Environment: keeper.security/format: "env"
+- YAML: keeper.security/format: "yaml"
+- Properties: keeper.security/format: "properties"
+- Custom: keeper.security/template: "your-template"
+
+Next Steps:
+1. Create a Kubernetes secret with your KSM configuration:
+
+   kubectl create secret generic keeper-auth \
+     --from-literal=config='<base64-ksm-config>' \
+     --namespace <your-namespace>
+
+2. Annotate your pods to inject secrets:
+
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     annotations:
+       keeper.security/inject: "true"
+       keeper.security/auth-secret: "keeper-auth"
+       keeper.security/secret: "your-secret-title"
+
+For more information:
+- Documentation: https://docs.keeper.io/k8s/injector
+- Examples: https://github.com/Keeper-Security/keeper-k8s-injector/tree/main/examples
+- Issues: https://github.com/Keeper-Security/keeper-k8s-injector/issues

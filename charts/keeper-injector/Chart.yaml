@@ -1,0 +1,41 @@
+apiVersion: v2
+name: keeper-injector
+description: Keeper Secrets Manager Kubernetes Injector - Inject secrets into pods at runtime
+type: application
+version: 0.10.0
+appVersion: "0.10.0"
+kubeVersion: ">=1.21.0-0"
+home: https://www.keepersecurity.com
+icon: https://keepersecurity.com/vault/images/keeper_icons/icon_rounded_256.png
+sources:
+  - https://github.com/Keeper-Security/helm-charts
+  - https://github.com/Keeper-Security/keeper-k8s-injector
+maintainers:
+  - name: Keeper Security
+    email: pam@keepersecurity.com
+    url: https://www.keepersecurity.com
+keywords:
+  - keeper
+  - secrets
+  - secrets-management
+  - kubernetes
+  - injection
+  - sidecar
+  - security
+annotations:
+  artifacthub.io/category: security
+  artifacthub.io/license: MIT
+  artifacthub.io/operator: "false"
+  artifacthub.io/prerelease: "false"
+  artifacthub.io/links: |
+    - name: Documentation
+      url: https://docs.keeper.io/secrets-manager/
+    - name: Source Code
+      url: https://github.com/Keeper-Security/keeper-k8s-injector
+    - name: Examples
+      url: https://github.com/Keeper-Security/keeper-k8s-injector/tree/main/examples
+    - name: Support
+      url: https://github.com/Keeper-Security/keeper-k8s-injector/issues
+  artifacthub.io/changes: |
+    - kind: changed
+      description: Renamed annotation from keeper.security/auth-secret to keeper.security/ksm-config for clarity - users must update pod annotations

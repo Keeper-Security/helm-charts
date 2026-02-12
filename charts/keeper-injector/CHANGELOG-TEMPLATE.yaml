@@ -1,0 +1,23 @@
+# Template for artifacthub.io/changes annotation
+# Copy this into Chart.yaml annotations section when releasing a new version
+# Only include changes for the current version, not all previous versions
+
+artifacthub.io/changes: |
+  - kind: added
+    description: Brief description of what was added
+    links:
+      - name: GitHub Issue
+        url: https://github.com/Keeper-Security/keeper-k8s-injector/issues/XXX
+  - kind: changed
+    description: Brief description of what was changed
+  - kind: deprecated
+    description: Brief description of what was deprecated
+  - kind: removed
+    description: Brief description of what was removed
+  - kind: fixed
+    description: Brief description of what was fixed
+  - kind: security
+    description: Brief description of security improvements
+
+# Valid kinds: added, changed, deprecated, removed, fixed, security
+# Links are optional but recommended for traceability

@@ -1,0 +1,18 @@
+{{- if .Values.namespaceManagement.createNamespace }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Release.Namespace }}
+  labels:
+    {{- include "keeper-injector.labels" . | nindent 4 }}
+    {{- if .Values.namespaceManagement.labelNamespace }}
+    keeper.security/inject: disabled
+    {{- end }}
+    {{- with .Values.namespaceManagement.additionalLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with .Values.namespaceManagement.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}

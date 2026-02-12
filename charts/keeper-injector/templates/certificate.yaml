@@ -1,0 +1,52 @@
+{{- if and .Values.tls.autoGenerate .Values.tls.certManager.enabled }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "keeper-injector.certSecretName" . }}
+  labels:
+    {{- include "keeper-injector.labels" . | nindent 4 }}
+spec:
+  secretName: {{ include "keeper-injector.certSecretName" . }}
+  duration: 8760h # 1 year
+  renewBefore: 720h # 30 days
+  subject:
+    organizations:
+      - Keeper Security
+  isCA: false
+  privateKey:
+    algorithm: RSA
+    size: 2048
+  usages:
+    - server auth
+  dnsNames:
+    - {{ include "keeper-injector.webhookServiceName" . }}
+    - {{ include "keeper-injector.webhookServiceName" . }}.{{ .Release.Namespace }}
+    - {{ include "keeper-injector.webhookServiceName" . }}.{{ .Release.Namespace }}.svc
+    - {{ include "keeper-injector.webhookServiceName" . }}.{{ .Release.Namespace }}.svc.cluster.local
+  issuerRef:
+    name: {{ default (printf "%s-issuer" (include "keeper-injector.fullname" .)) .Values.tls.certManager.issuerName }}
+    kind: {{ .Values.tls.certManager.issuerKind }}
+---
+{{- if not .Values.tls.certManager.issuerName }}
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ include "keeper-injector.fullname" . }}-issuer
+  labels:
+    {{- include "keeper-injector.labels" . | nindent 4 }}
+spec:
+  selfSigned: {}
+{{- end }}
+{{- else if not .Values.tls.autoGenerate }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "keeper-injector.certSecretName" . }}
+  labels:
+    {{- include "keeper-injector.labels" . | nindent 4 }}
+type: kubernetes.io/tls
+data:
+  tls.crt: {{ .Values.tls.certificate.crt }}
+  tls.key: {{ .Values.tls.certificate.key }}
+  ca.crt: {{ .Values.tls.certificate.ca }}
+{{- end }}
