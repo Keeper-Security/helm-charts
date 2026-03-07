@@ -5,7 +5,9 @@ Deploy the [Keeper PAM Gateway](https://docs.keeper.io/en/keeperpam/privileged-a
 ## Quick Start
 
 ```bash
-helm install keeper-gateway oci://registry-1.docker.io/keeper/keeper-gateway \
+helm repo add keeper https://keeper-security.github.io/helm-charts
+helm repo update
+helm install keeper-gateway keeper/keeper-gateway \
   --namespace keeper-gateway --create-namespace \
   --set gateway.acceptEula=Y \
   --set gateway.config='<base64-config-from-keeper>'
@@ -21,19 +23,6 @@ The gateway connects outbound to Keeper infrastructure. No Ingress or inbound po
 
 ## Installation
 
-### From OCI Registry
-
-The chart is published as an OCI artifact to Docker Hub automatically on each release.
-
-```bash
-helm install keeper-gateway oci://registry-1.docker.io/keeper/keeper-gateway \
-  --namespace keeper-gateway --create-namespace \
-  --set gateway.acceptEula=Y \
-  --set gateway.config='<base64-config>'
-```
-
-### From Helm Repository
-
 ```bash
 helm repo add keeper https://keeper-security.github.io/helm-charts
 helm repo update
@@ -45,14 +34,14 @@ helm install keeper-gateway keeper/keeper-gateway \
 
 ### Using an Existing Secret
 
-If you prefer to manage the gateway config as a Kubernetes Secret separately:
+For production, store the gateway config in a Kubernetes Secret you manage separately (avoids exposing the config in shell history):
 
 ```bash
 kubectl create namespace keeper-gateway
 kubectl create secret generic gw-config \
   --from-literal=gateway-config='<base64-config>' -n keeper-gateway
 
-helm install keeper-gateway oci://registry-1.docker.io/keeper/keeper-gateway \
+helm install keeper-gateway keeper/keeper-gateway \
   --namespace keeper-gateway \
   --set gateway.acceptEula=Y \
   --set gateway.existingSecret=gw-config
@@ -68,7 +57,7 @@ kubectl logs -n keeper-gateway -l app.kubernetes.io/name=keeper-gateway
 ## Upgrade
 
 ```bash
-helm upgrade keeper-gateway oci://registry-1.docker.io/keeper/keeper-gateway \
+helm upgrade keeper-gateway keeper/keeper-gateway \
   --namespace keeper-gateway \
   --reuse-values
 ```
@@ -78,7 +67,7 @@ With the default strategy (`Recreate`), the existing pod is terminated before th
 > **Note**: `--set gateway.config` passes the config through shell history and `helm get values`. For production, use `gateway.existingSecret` to keep the config in a Kubernetes Secret that you manage separately:
 >
 > ```bash
-> helm upgrade keeper-gateway oci://registry-1.docker.io/keeper/keeper-gateway \
+> helm upgrade keeper-gateway keeper/keeper-gateway \
 >   --namespace keeper-gateway \
 >   --set gateway.acceptEula=Y \
 >   --set gateway.existingSecret=gw-config
@@ -92,7 +81,7 @@ Run multiple gateway instances for high availability and load distribution. See 
 
 ```bash
 # Fixed number of replicas (no autoscaling)
-helm install keeper-gateway oci://registry-1.docker.io/keeper/keeper-gateway \
+helm install keeper-gateway keeper/keeper-gateway \
   --namespace keeper-gateway --create-namespace \
   --set gateway.acceptEula=Y \
   --set gateway.config='<config>' \
@@ -100,7 +89,7 @@ helm install keeper-gateway oci://registry-1.docker.io/keeper/keeper-gateway \
   --set strategy.type=RollingUpdate
 
 # Or with autoscaling (HPA manages replica count automatically)
-helm install keeper-gateway oci://registry-1.docker.io/keeper/keeper-gateway \
+helm install keeper-gateway keeper/keeper-gateway \
   --namespace keeper-gateway --create-namespace \
   --set gateway.acceptEula=Y \
   --set gateway.config='<config>' \
@@ -115,7 +104,7 @@ helm install keeper-gateway oci://registry-1.docker.io/keeper/keeper-gateway \
 Use an LLM to monitor privileged sessions and flag suspicious commands in real time. See the [KeeperAI](https://docs.keeper.io/en/keeperpam/privileged-access-manager/keeperai) documentation for details and supported providers.
 
 ```bash
-helm install keeper-gateway oci://registry-1.docker.io/keeper/keeper-gateway \
+helm install keeper-gateway keeper/keeper-gateway \
   --namespace keeper-gateway --create-namespace \
   --set gateway.acceptEula=Y \
   --set gateway.config='<config>' \
@@ -134,7 +123,7 @@ For cloud-native authentication (AWS Bedrock with IRSA, Vertex AI with Workload 
 The gateway supports multiple log levels and output formats. Structured logging formats are available in gateway 1.8.0+.
 
 ```bash
-helm install keeper-gateway oci://registry-1.docker.io/keeper/keeper-gateway \
+helm install keeper-gateway keeper/keeper-gateway \
   --namespace keeper-gateway --create-namespace \
   --set gateway.acceptEula=Y \
   --set gateway.config='<config>' \
@@ -157,7 +146,7 @@ Deploy sample SSH, RDP, VNC, and MySQL containers alongside the gateway for test
 Use the Keeper Vault "Provision Gateway" wizard with "Create with example records" checked, then plug in the generated config:
 
 ```bash
-helm install keeper-gateway oci://registry-1.docker.io/keeper/keeper-gateway \
+helm install keeper-gateway keeper/keeper-gateway \
   --namespace keeper-gateway --create-namespace \
   --set gateway.acceptEula=Y \
   --set gateway.config='<config-from-wizard>' \
@@ -168,7 +157,7 @@ Individual services can be toggled on or off:
 
 ```bash
 # Only SSH and MySQL
-helm install keeper-gateway oci://registry-1.docker.io/keeper/keeper-gateway \
+helm install keeper-gateway keeper/keeper-gateway \
   --namespace keeper-gateway --create-namespace \
   --set gateway.acceptEula=Y \
   --set gateway.config='<config>' \
@@ -195,7 +184,7 @@ All demo passwords are configurable — override them with values from your Keep
 If your network uses SSL inspection (e.g., Zscaler or other corporate proxies), the gateway needs your organization's CA certificate to establish outbound connections.
 
 ```bash
-helm install keeper-gateway oci://registry-1.docker.io/keeper/keeper-gateway \
+helm install keeper-gateway keeper/keeper-gateway \
   --namespace keeper-gateway --create-namespace \
   --set gateway.acceptEula=Y \
   --set gateway.config='<config>' \
@@ -208,7 +197,7 @@ Or from a ConfigMap:
 kubectl create configmap company-ca \
   --from-file=ca-certificates.crt=./company-ca.pem -n keeper-gateway
 
-helm install keeper-gateway oci://registry-1.docker.io/keeper/keeper-gateway \
+helm install keeper-gateway keeper/keeper-gateway \
   --namespace keeper-gateway \
   --set gateway.acceptEula=Y \
   --set gateway.config='<config>' \
@@ -220,7 +209,7 @@ helm install keeper-gateway oci://registry-1.docker.io/keeper/keeper-gateway \
 By default, the gateway stores session recordings inside the container's filesystem. If the pod restarts, recordings are lost. Enable persistent storage to keep recordings across pod restarts:
 
 ```bash
-helm install keeper-gateway oci://registry-1.docker.io/keeper/keeper-gateway \
+helm install keeper-gateway keeper/keeper-gateway \
   --namespace keeper-gateway --create-namespace \
   --set gateway.acceptEula=Y \
   --set gateway.config='<config>' \
