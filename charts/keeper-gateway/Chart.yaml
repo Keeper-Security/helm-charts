@@ -2,7 +2,7 @@ apiVersion: v2
 name: keeper-gateway
 description: Keeper PAM Gateway - Remote access, secret rotation, and discovery for Keeper Security
 type: application
-version: 0.1.2
+version: 0.1.3
 appVersion: "1.7.6"
 kubeVersion: ">=1.25.0-0"
 home: https://www.keepersecurity.com
@@ -39,14 +39,22 @@ annotations:
       url: https://www.keepersecurity.com/support.html
   artifacthub.io/changes: |
     - kind: added
-      description: KeeperAI threat detection configuration
+      description: KeeperAI threat detection configuration with support for OpenAI, Anthropic, Azure, GCP, and AWS Bedrock
     - kind: added
-      description: Memory-based resource management controls
+      description: Memory-based resource management controls (connection limiting when memory is low)
     - kind: added
-      description: Separate log level controls for gateway and guacd
+      description: Separate log level controls for gateway service and guacd daemon
     - kind: added
-      description: Demo playground services (MySQL, SSH, VNC, RDP)
+      description: Demo playground services for testing (MySQL, SSH, VNC, RDP)
+    - kind: added
+      description: MIT license, .helmignore files, and Helm test
     - kind: fixed
       description: Health probes use tcpSocket to avoid 401 from non-localhost requests
+    - kind: fixed
+      description: Set both LOG_LEVEL (guacd) and KEEPER_GATEWAY_LOG_LEVEL (gateway) in configmap
     - kind: changed
-      description: Removed OCI registry distribution, use Helm repository only
+      description: Session recordings are encrypted (AES-256-GCM) and streamed to Keeper in real time
+    - kind: changed
+      description: Use Helm repository as only install method (removed OCI references)
+    - kind: changed
+      description: Improved documentation with examples, explanatory text, and configuration reference

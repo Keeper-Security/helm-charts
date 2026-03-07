@@ -217,7 +217,7 @@ helm install keeper-gateway keeper/keeper-gateway \
 
 ### Session Recordings Storage
 
-By default, the gateway stores session recordings inside the container's filesystem. If the pod restarts, recordings are lost. Enable persistent storage to keep recordings across pod restarts:
+Session recordings are encrypted (AES-256-GCM) and streamed to Keeper in real time as the session happens — recordings are never lost, even if the pod restarts. The gateway uses a temporary local directory as a buffer during streaming. On machines with limited disk space or when handling many concurrent sessions, you may want to attach a larger persistent volume for this buffer:
 
 ```bash
 helm install keeper-gateway keeper/keeper-gateway \
@@ -367,7 +367,7 @@ For networks with SSL inspection or self-signed certificates. The gateway instal
 
 ### Storage
 
-Persistent storage for session recordings. Without this, recordings are stored inside the container and lost on pod restart.
+Recordings are encrypted and streamed to Keeper in real time. The local storage is a temporary buffer used during streaming. Attach a persistent volume if the gateway handles many concurrent sessions or runs on nodes with limited disk space.
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
@@ -496,9 +496,7 @@ helm uninstall keeper-gateway -n keeper-gateway
 kubectl delete namespace keeper-gateway
 ```
 
-If session recordings storage was enabled, the persistent volume is not deleted automatically (Kubernetes retains persistent volumes to prevent accidental data loss). To delete it:
-
-> **Warning**: This permanently destroys all stored session recordings. Verify you have backed up any needed recordings before proceeding.
+If recordings storage was enabled, the persistent volume is not deleted automatically. To remove it:
 
 ```bash
 kubectl delete pvc -n keeper-gateway -l app.kubernetes.io/name=keeper-gateway
