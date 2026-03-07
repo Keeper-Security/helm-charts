@@ -18,7 +18,54 @@ entries:
       artifacthub.io/prerelease: "false"
     apiVersion: v2
     appVersion: 1.7.6
-    created: "2026-03-07T18:09:24.552380382Z"
+    created: "2026-03-07T18:15:58.832208977Z"
+    description: Keeper PAM Gateway - Remote access, secret rotation, and discovery
+      for Keeper Security
+    digest: 823d7a4bb6379635a68ef8a7155e46bcc11bb9089856b0bcdd243932607efab0
+    home: https://www.keepersecurity.com
+    icon: https://keepersecurity.com/vault/images/keeper_icons/icon_rounded_256.png
+    keywords:
+    - keeper
+    - pam
+    - gateway
+    - remote-access
+    - rdp
+    - ssh
+    - vnc
+    - secret-rotation
+    - discovery
+    - security
+    - privileged-access
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - email: pam@keepersecurity.com
+      name: Keeper Security
+      url: https://www.keepersecurity.com
+    name: keeper-gateway
+    sources:
+    - https://github.com/Keeper-Security/helm-charts
+    type: application
+    urls:
+    - https://keeper-security.github.io/helm-charts/keeper-gateway-0.1.1.tgz
+    version: 0.1.1
+  - annotations:
+      artifacthub.io/category: security
+      artifacthub.io/changes: |
+        - kind: added
+          description: Initial Helm chart release for Keeper PAM Gateway
+      artifacthub.io/license: MIT
+      artifacthub.io/links: |
+        - name: Documentation
+          url: https://docs.keeper.io/en/keeperpam/privileged-access-manager/getting-started/gateways
+        - name: Docker Hub
+          url: https://hub.docker.com/r/keeper/gateway
+        - name: Support
+          url: https://www.keepersecurity.com/support.html
+      artifacthub.io/operator: "false"
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 1.7.6
+    created: "2026-03-07T18:15:58.830533319Z"
     description: Keeper PAM Gateway - Remote access, secret rotation, and discovery
       for Keeper Security
     digest: c45bc822413625a862110ca90e6a632b9be711c7e72c57ba8a72894b8ebb293f
@@ -68,7 +115,7 @@ entries:
       artifacthub.io/prerelease: "false"
     apiVersion: v2
     appVersion: 0.10.0
-    created: "2026-03-07T18:09:24.553200072Z"
+    created: "2026-03-07T18:15:58.833073821Z"
     description: Keeper Secrets Manager Kubernetes Injector - Inject secrets into
       pods at runtime
     digest: b62a8b143c1b2146832b5b30ca35141126717ddb29ec969248aed89009958212
@@ -95,4 +142,4 @@ entries:
     urls:
     - https://keeper-security.github.io/helm-charts/keeper-injector-0.10.0.tgz
     version: 0.10.0
-generated: "2026-03-07T18:09:24.551006562Z"
+generated: "2026-03-07T18:15:58.828854074Z"
