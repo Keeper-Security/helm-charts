@@ -1,2 +1,4 @@
 .helm-packages/
 *.tgz
+.DS_Store
+TESTING-*.md

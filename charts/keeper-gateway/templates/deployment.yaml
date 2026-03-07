@@ -1,0 +1,209 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "keeper-gateway.fullname" . }}
+  labels:
+    {{- include "keeper-gateway.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  {{- with .Values.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "keeper-gateway.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "keeper-gateway.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "keeper-gateway.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      {{- with .Values.initContainers }}
+      initContainers:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: gateway
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: {{ include "keeper-gateway.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "keeper-gateway.fullname" . }}-config
+            {{- with .Values.extraEnvFrom }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          env:
+            {{- if .Values.gateway.existingSecret }}
+            - name: GATEWAY_CONFIG
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.gateway.existingSecret }}
+                  key: {{ .Values.gateway.existingSecretKey }}
+            {{- else if .Values.gateway.config }}
+            - name: GATEWAY_CONFIG
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "keeper-gateway.fullname" . }}-config
+                  key: gateway-config
+            {{- end }}
+            {{- if .Values.healthCheck.existingAuthTokenSecret }}
+            - name: KEEPER_GATEWAY_HEALTH_CHECK_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.healthCheck.existingAuthTokenSecret }}
+                  key: {{ .Values.healthCheck.existingAuthTokenSecretKey }}
+            {{- else if .Values.healthCheck.authToken }}
+            - name: KEEPER_GATEWAY_HEALTH_CHECK_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "keeper-gateway.fullname" . }}-health-token
+                  key: health-check-token
+            {{- end }}
+            {{- if .Values.caCertificates.existingConfigMap }}
+            - name: CA_CERTIFICATES_FILE
+              value: /etc/keeper/ca-certs/{{ .Values.caCertificates.existingConfigMapKey }}
+            {{- end }}
+            {{- if .Values.ai.enabled }}
+            {{- if .Values.ai.existingSecret }}
+            - name: KEEPER_GATEWAY_AI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.ai.existingSecret }}
+                  key: {{ .Values.ai.existingSecretKey }}
+            {{- else if .Values.ai.apiKey }}
+            - name: KEEPER_GATEWAY_AI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "keeper-gateway.fullname" . }}-ai
+                  key: ai-api-key
+            {{- end }}
+            {{- end }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- if .Values.healthCheck.enabled }}
+          ports:
+            - name: health
+              containerPort: {{ .Values.healthCheck.port }}
+              protocol: TCP
+          {{- end }}
+          {{- if and .Values.healthCheck.enabled .Values.probes.startup.enabled }}
+          startupProbe:
+            tcpSocket:
+              port: health
+            initialDelaySeconds: {{ .Values.probes.startup.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.startup.periodSeconds }}
+            failureThreshold: {{ .Values.probes.startup.failureThreshold }}
+          {{- end }}
+          {{- if and .Values.healthCheck.enabled .Values.probes.liveness.enabled }}
+          livenessProbe:
+            tcpSocket:
+              port: health
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+          {{- end }}
+          {{- if and .Values.healthCheck.enabled .Values.probes.readiness.enabled }}
+          readinessProbe:
+            tcpSocket:
+              port: health
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+          {{- end }}
+          {{- with .Values.lifecycle }}
+          lifecycle:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            {{- if .Values.sharedMemory.enabled }}
+            - name: dshm
+              mountPath: /dev/shm
+            {{- end }}
+            {{- if .Values.recordings.enabled }}
+            - name: recordings
+              mountPath: {{ .Values.recordings.mountPath }}
+            {{- end }}
+            {{- if .Values.caCertificates.existingConfigMap }}
+            - name: ca-certs
+              mountPath: /etc/keeper/ca-certs
+              readOnly: true
+            {{- end }}
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- with .Values.extraContainers }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      volumes:
+        {{- if .Values.sharedMemory.enabled }}
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: {{ .Values.sharedMemory.sizeLimit }}
+        {{- end }}
+        {{- if .Values.recordings.enabled }}
+        - name: recordings
+          {{- if .Values.recordings.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.recordings.existingClaim }}
+          {{- else }}
+          persistentVolumeClaim:
+            claimName: {{ include "keeper-gateway.fullname" . }}-recordings
+          {{- end }}
+        {{- end }}
+        {{- if .Values.caCertificates.existingConfigMap }}
+        - name: ca-certs
+          configMap:
+            name: {{ .Values.caCertificates.existingConfigMap }}
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

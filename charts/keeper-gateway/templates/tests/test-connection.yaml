@@ -1,0 +1,17 @@
+{{- if .Values.healthCheck.enabled }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "keeper-gateway.fullname" . }}-test-connection"
+  labels:
+    {{- include "keeper-gateway.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['--timeout=5', '{{ include "keeper-gateway.fullname" . }}:{{ .Values.service.port }}/health', '-O', '-']
+  restartPolicy: Never
+{{- end }}

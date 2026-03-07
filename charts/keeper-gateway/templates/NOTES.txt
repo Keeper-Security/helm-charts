@@ -1,0 +1,47 @@
+Keeper PAM Gateway {{ .Chart.Version }} has been installed.
+
+Release: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+
+To verify the installation:
+
+  kubectl get pods -n {{ .Release.Namespace }}
+
+{{- if not .Values.gateway.acceptEula }}
+
+  WARNING: gateway.acceptEula is not set to "Y".
+  The gateway will not start without accepting the EULA.
+{{- end }}
+
+{{- if and (not .Values.gateway.config) (not .Values.gateway.existingSecret) (not .Values.gateway.awsKmsSecretName) }}
+
+  WARNING: No gateway configuration provided.
+  You must set one of:
+    - gateway.config (base64-encoded config from Keeper)
+    - gateway.existingSecret (existing K8s secret name)
+    - gateway.awsKmsSecretName (AWS Secrets Manager secret)
+{{- end }}
+
+{{- if .Values.healthCheck.enabled }}
+
+Health check endpoint:
+
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "keeper-gateway.fullname" . }} {{ .Values.healthCheck.port }}:{{ .Values.service.port }}
+  curl http://localhost:{{ .Values.healthCheck.port }}/health
+{{- end }}
+
+Next steps:
+
+  1. Check pod logs:
+     kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "keeper-gateway.name" . }}
+
+  2. Verify the gateway appears online in Keeper Admin Console
+
+  3. Configure rotation, discovery, or connections via Keeper Commander or Vault
+
+The gateway connects outbound to Keeper infrastructure via WebSocket.
+No inbound ports or Ingress are required.
+
+Documentation: https://docs.keeper.io/en/keeperpam/privileged-access-manager/getting-started/gateways
+Docker Hub: https://hub.docker.com/r/keeper/gateway
+Support: https://www.keepersecurity.com/support.html

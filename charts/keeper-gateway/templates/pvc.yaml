@@ -1,0 +1,21 @@
+{{- if and .Values.recordings.enabled (not .Values.recordings.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "keeper-gateway.fullname" . }}-recordings
+  labels:
+    {{- include "keeper-gateway.labels" . | nindent 4 }}
+  {{- with .Values.recordings.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    {{- toYaml .Values.recordings.accessModes | nindent 4 }}
+  {{- if .Values.recordings.storageClass }}
+  storageClassName: {{ .Values.recordings.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.recordings.size }}
+{{- end }}

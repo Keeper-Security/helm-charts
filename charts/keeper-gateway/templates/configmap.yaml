@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "keeper-gateway.fullname" . }}-config
+  labels:
+    {{- include "keeper-gateway.labels" . | nindent 4 }}
+data:
+  {{- if .Values.gateway.acceptEula }}
+  ACCEPT_EULA: {{ .Values.gateway.acceptEula | quote }}
+  {{- end }}
+  LOG_LEVEL: {{ .Values.logging.level | quote }}
+  KEEPER_GATEWAY_LOG_FORMAT: {{ .Values.logging.format | quote }}
+  {{- if .Values.healthCheck.enabled }}
+  KEEPER_GATEWAY_HEALTH_CHECK_ENABLED: "true"
+  KEEPER_GATEWAY_HEALTH_CHECK_HOST: "0.0.0.0"
+  KEEPER_GATEWAY_HEALTH_CHECK_PORT: {{ .Values.healthCheck.port | quote }}
+  {{- end }}
+  {{- if .Values.syslog.enabled }}
+  KEEPER_GATEWAY_SYSLOG_HOST: {{ .Values.syslog.host | quote }}
+  KEEPER_GATEWAY_SYSLOG_PORT: {{ .Values.syslog.port | quote }}
+  KEEPER_GATEWAY_SYSLOG_PROTO: {{ .Values.syslog.proto | quote }}
+  {{- end }}
+  {{- if .Values.pipPackages }}
+  GATEWAY_PIP_PACKAGES: {{ .Values.pipPackages | quote }}
+  {{- end }}
+  {{- if .Values.gateway.awsKmsSecretName }}
+  AWS_KMS_SECRET_NAME: {{ .Values.gateway.awsKmsSecretName | quote }}
+  {{- end }}
+  {{- if .Values.caCertificates.inline }}
+  CA_CERTIFICATES: {{ .Values.caCertificates.inline | quote }}
+  {{- end }}
+  {{- if .Values.ai.enabled }}
+  {{- if .Values.ai.provider }}
+  KEEPER_GATEWAY_AI_LLM_PROVIDER: {{ .Values.ai.provider | quote }}
+  {{- end }}
+  {{- if .Values.ai.model }}
+  KEEPER_GATEWAY_AI_MODEL: {{ .Values.ai.model | quote }}
+  {{- end }}
+  {{- if .Values.ai.baseUrl }}
+  KEEPER_GATEWAY_AI_BASE_URL: {{ .Values.ai.baseUrl | quote }}
+  {{- end }}
+  {{- if .Values.ai.apiVersion }}
+  KEEPER_GATEWAY_AI_API_VERSION: {{ .Values.ai.apiVersion | quote }}
+  {{- end }}
+  {{- if .Values.ai.projectId }}
+  KEEPER_GATEWAY_AI_PROJECT_ID: {{ .Values.ai.projectId | quote }}
+  {{- end }}
+  {{- if .Values.ai.location }}
+  KEEPER_GATEWAY_AI_LOCATION: {{ .Values.ai.location | quote }}
+  {{- end }}
+  {{- if .Values.ai.credentials }}
+  KEEPER_GATEWAY_AI_CREDENTIALS: {{ .Values.ai.credentials | quote }}
+  {{- end }}
+  {{- end }}
+  KEEPER_GATEWAY_RESOURCE_CHECK_ENABLED: {{ .Values.resourceCheck.enabled | quote }}
+  KEEPER_GATEWAY_MIN_HEADROOM_PERCENT: {{ .Values.resourceCheck.minHeadroomPercent | quote }}
+  KEEPER_GATEWAY_CHECK_RBI_CAPACITY: {{ .Values.resourceCheck.checkRbiCapacity | quote }}

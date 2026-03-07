@@ -1,0 +1,342 @@
+{{/*
+Demo / Playground Services
+These deploy sample containers for testing gateway connections.
+Service names match the hostnames used by the Keeper Vault demo wizard
+so that PAM records resolve correctly.
+*/}}
+{{- if .Values.demo.enabled }}
+
+{{/* ================================================================ */}}
+{{/* MySQL Database                                                   */}}
+{{/* Hostname: db-mysql-1  Port: 3306                                 */}}
+{{/* ================================================================ */}}
+{{- if .Values.demo.mysql.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-mysql-1
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "keeper-gateway.labels" . | nindent 4 }}
+    app.kubernetes.io/component: demo-mysql
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3306
+      targetPort: 3306
+      protocol: TCP
+      name: mysql
+  selector:
+    app.kubernetes.io/component: demo-mysql
+    app.kubernetes.io/instance: {{ .Release.Name }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "keeper-gateway.fullname" . }}-demo-mysql
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "keeper-gateway.labels" . | nindent 4 }}
+    app.kubernetes.io/component: demo-mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: demo-mysql
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: demo-mysql
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: mysql
+          image: {{ .Values.demo.mysql.image }}
+          env:
+            - name: MYSQL_ROOT_HOST
+              value: "%"
+            - name: MYSQL_ROOT_PASSWORD
+              value: {{ .Values.demo.mysql.rootPassword | quote }}
+            - name: MYSQL_DATABASE
+              value: {{ .Values.demo.mysql.database | quote }}
+            - name: MYSQL_USER
+              value: {{ .Values.demo.mysql.user | quote }}
+            - name: MYSQL_PASSWORD
+              value: {{ .Values.demo.mysql.password | quote }}
+          ports:
+            - containerPort: 3306
+          resources:
+            {{- toYaml .Values.demo.mysql.resources | nindent 12 }}
+{{- end }}
+
+---
+{{/* ================================================================ */}}
+{{/* SSH Server (Password Authentication)                             */}}
+{{/* Hostname: server-ssh-with-pwd-1  Port: 2222                      */}}
+{{/* ================================================================ */}}
+{{- if .Values.demo.sshPassword.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: server-ssh-with-pwd-1
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "keeper-gateway.labels" . | nindent 4 }}
+    app.kubernetes.io/component: demo-ssh-pwd
+spec:
+  type: ClusterIP
+  ports:
+    - port: 2222
+      targetPort: 2222
+      protocol: TCP
+      name: ssh
+  selector:
+    app.kubernetes.io/component: demo-ssh-pwd
+    app.kubernetes.io/instance: {{ .Release.Name }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "keeper-gateway.fullname" . }}-demo-ssh-pwd
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "keeper-gateway.labels" . | nindent 4 }}
+    app.kubernetes.io/component: demo-ssh-pwd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: demo-ssh-pwd
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: demo-ssh-pwd
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: ssh
+          image: {{ .Values.demo.sshPassword.image }}
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: "America/Los_Angeles"
+            - name: SUDO_ACCESS
+              value: "true"
+            - name: PASSWORD_ACCESS
+              value: "true"
+            - name: USER_NAME
+              value: {{ .Values.demo.sshPassword.user | quote }}
+            - name: USER_PASSWORD
+              value: {{ .Values.demo.sshPassword.password | quote }}
+          ports:
+            - containerPort: 2222
+          resources:
+            {{- toYaml .Values.demo.sshPassword.resources | nindent 12 }}
+{{- end }}
+
+---
+{{/* ================================================================ */}}
+{{/* SSH Server (Key Authentication)                                  */}}
+{{/* Hostname: server-ssh-with-key-1  Port: 2222                      */}}
+{{/* ================================================================ */}}
+{{- if .Values.demo.sshKey.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: server-ssh-with-key-1
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "keeper-gateway.labels" . | nindent 4 }}
+    app.kubernetes.io/component: demo-ssh-key
+spec:
+  type: ClusterIP
+  ports:
+    - port: 2222
+      targetPort: 2222
+      protocol: TCP
+      name: ssh
+  selector:
+    app.kubernetes.io/component: demo-ssh-key
+    app.kubernetes.io/instance: {{ .Release.Name }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "keeper-gateway.fullname" . }}-demo-ssh-key
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "keeper-gateway.labels" . | nindent 4 }}
+    app.kubernetes.io/component: demo-ssh-key
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: demo-ssh-key
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: demo-ssh-key
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: ssh
+          image: {{ .Values.demo.sshKey.image }}
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: "America/Los_Angeles"
+            - name: SUDO_ACCESS
+              value: "true"
+            - name: USER_NAME
+              value: {{ .Values.demo.sshKey.user | quote }}
+            - name: PASSWORD_ACCESS
+              value: "false"
+            - name: PUBLIC_KEY
+              value: {{ .Values.demo.sshKey.publicKey | quote }}
+          ports:
+            - containerPort: 2222
+          resources:
+            {{- toYaml .Values.demo.sshKey.resources | nindent 12 }}
+{{- end }}
+
+---
+{{/* ================================================================ */}}
+{{/* VNC Server                                                       */}}
+{{/* Hostname: server-vnc  Port: 5901                                 */}}
+{{/* ================================================================ */}}
+{{- if .Values.demo.vnc.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: server-vnc
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "keeper-gateway.labels" . | nindent 4 }}
+    app.kubernetes.io/component: demo-vnc
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5901
+      targetPort: 5901
+      protocol: TCP
+      name: vnc
+  selector:
+    app.kubernetes.io/component: demo-vnc
+    app.kubernetes.io/instance: {{ .Release.Name }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "keeper-gateway.fullname" . }}-demo-vnc
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "keeper-gateway.labels" . | nindent 4 }}
+    app.kubernetes.io/component: demo-vnc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: demo-vnc
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: demo-vnc
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: vnc
+          image: {{ .Values.demo.vnc.image }}
+          env:
+            - name: VNC_PW
+              value: {{ .Values.demo.vnc.password | quote }}
+            - name: VNC_RESOLUTION
+              value: {{ .Values.demo.vnc.resolution | quote }}
+          ports:
+            - containerPort: 5901
+          resources:
+            {{- toYaml .Values.demo.vnc.resources | nindent 12 }}
+{{- end }}
+
+---
+{{/* ================================================================ */}}
+{{/* RDP Server                                                       */}}
+{{/* Hostname: server-rdp  Port: 3389                                 */}}
+{{/* ================================================================ */}}
+{{- if .Values.demo.rdp.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: server-rdp
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "keeper-gateway.labels" . | nindent 4 }}
+    app.kubernetes.io/component: demo-rdp
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3389
+      targetPort: 3389
+      protocol: TCP
+      name: rdp
+  selector:
+    app.kubernetes.io/component: demo-rdp
+    app.kubernetes.io/instance: {{ .Release.Name }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "keeper-gateway.fullname" . }}-demo-rdp
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "keeper-gateway.labels" . | nindent 4 }}
+    app.kubernetes.io/component: demo-rdp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: demo-rdp
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: demo-rdp
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: rdp
+          image: {{ .Values.demo.rdp.image }}
+          securityContext:
+            seccompProfile:
+              type: Unconfined
+          env:
+            - name: ROOT_PASSWORD
+              value: {{ .Values.demo.rdp.rootPassword | quote }}
+            - name: USER
+              value: {{ .Values.demo.rdp.user | quote }}
+            - name: PASSWORD
+              value: {{ .Values.demo.rdp.password | quote }}
+          ports:
+            - containerPort: 3389
+          resources:
+            {{- toYaml .Values.demo.rdp.resources | nindent 12 }}
+          volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: {{ .Values.demo.rdp.shmSizeLimit }}
+{{- end }}
+
+{{- end }}

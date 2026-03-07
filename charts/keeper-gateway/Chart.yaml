@@ -1,0 +1,42 @@
+apiVersion: v2
+name: keeper-gateway
+description: Keeper PAM Gateway - Remote access, secret rotation, and discovery for Keeper Security
+type: application
+version: 0.1.0
+appVersion: "1.7.6"
+kubeVersion: ">=1.25.0-0"
+home: https://www.keepersecurity.com
+icon: https://keepersecurity.com/vault/images/keeper_icons/icon_rounded_256.png
+sources:
+  - https://github.com/Keeper-Security/helm-charts
+maintainers:
+  - name: Keeper Security
+    email: pam@keepersecurity.com
+    url: https://www.keepersecurity.com
+keywords:
+  - keeper
+  - pam
+  - gateway
+  - remote-access
+  - rdp
+  - ssh
+  - vnc
+  - secret-rotation
+  - discovery
+  - security
+  - privileged-access
+annotations:
+  artifacthub.io/category: security
+  artifacthub.io/license: MIT
+  artifacthub.io/operator: "false"
+  artifacthub.io/prerelease: "false"
+  artifacthub.io/links: |
+    - name: Documentation
+      url: https://docs.keeper.io/en/keeperpam/privileged-access-manager/getting-started/gateways
+    - name: Docker Hub
+      url: https://hub.docker.com/r/keeper/gateway
+    - name: Support
+      url: https://www.keepersecurity.com/support.html
+  artifacthub.io/changes: |
+    - kind: added
+      description: Initial Helm chart release for Keeper PAM Gateway

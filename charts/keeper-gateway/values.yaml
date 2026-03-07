@@ -1,0 +1,465 @@
+# Keeper PAM Gateway Helm Values
+# For full documentation, see: https://docs.keeper.io/en/keeperpam/privileged-access-manager/getting-started/gateways
+
+# -- Number of gateway replicas (use 1 unless multi-instance mode is enabled for this gateway in Keeper)
+replicaCount: 1
+
+# Gateway image
+image:
+  # -- Image repository
+  repository: keeper/gateway
+  # -- Image pull policy
+  pullPolicy: IfNotPresent
+  # -- Image tag (defaults to chart appVersion)
+  tag: ""
+
+# -- Image pull secrets
+imagePullSecrets: []
+
+# -- Override chart name
+nameOverride: ""
+
+# -- Override full name
+fullnameOverride: ""
+
+# Service account configuration
+serviceAccount:
+  # -- Create service account
+  create: true
+  # -- Service account annotations (e.g., for AWS IRSA or GCP Workload Identity)
+  annotations: {}
+  # -- Service account name (generated if not set)
+  name: ""
+
+# -- Pod annotations
+podAnnotations: {}
+
+# -- Pod labels (in addition to standard labels)
+podLabels: {}
+
+# Pod security context
+# NOTE: The gateway container starts as root for CA cert installation and pip packages,
+# then drops privileges internally to the keeper-gw user before starting services.
+# Do NOT set runAsNonRoot: true or runAsUser here.
+podSecurityContext: {}
+
+# Container security context
+# NOTE: Do NOT restrict to non-root. The entrypoint requires root for CA cert
+# installation and pip packages, then drops privileges to keeper-gw.
+securityContext: {}
+
+# -- Deployment strategy (Recreate for single-instance, RollingUpdate for multi-instance)
+strategy:
+  type: Recreate
+
+# -- Termination grace period (seconds). Allow time for active sessions to drain.
+terminationGracePeriodSeconds: 60
+
+# -- Lifecycle hooks (e.g., preStop for graceful connection draining)
+lifecycle: {}
+  # preStop:
+  #   exec:
+  #     command: ["/bin/sh", "-c", "sleep 10"]
+
+# ============================================================================
+# Gateway Configuration (REQUIRED)
+# ============================================================================
+
+gateway:
+  # -- Accept EULA (must be "Y" to run the gateway)
+  acceptEula: ""
+
+  # -- Gateway config (base64-encoded, from Keeper Vault gateway provisioning)
+  # Provide this directly OR use existingSecret
+  config: ""
+
+  # -- Use an existing Kubernetes secret for GATEWAY_CONFIG
+  existingSecret: ""
+
+  # -- Key name within the existing secret
+  existingSecretKey: "gateway-config"
+
+  # -- AWS Secrets Manager secret name (alternative config source)
+  awsKmsSecretName: ""
+
+# ============================================================================
+# Logging
+# ============================================================================
+
+logging:
+  # -- Log level: error, warning, info, debug, trace
+  level: "info"
+  # -- Log format: text, json, logfmt, cef, leef, rfc5424, rfc3164, gelf
+  format: "text"
+
+# Syslog forwarding (optional)
+syslog:
+  # -- Enable syslog forwarding
+  enabled: false
+  # -- Syslog host
+  host: ""
+  # -- Syslog port
+  port: 514
+  # -- Syslog protocol: tcp, udp
+  proto: "udp"
+
+# ============================================================================
+# Health Check
+# ============================================================================
+
+healthCheck:
+  # -- Enable health check API
+  enabled: true
+  # -- Health check port
+  port: 8099
+  # -- Health check auth token (optional, for securing /health endpoint)
+  authToken: ""
+  # -- Use existing secret for auth token
+  existingAuthTokenSecret: ""
+  # -- Key within the existing secret
+  existingAuthTokenSecretKey: "health-check-token"
+
+# Probe configuration
+probes:
+  startup:
+    # -- Enable startup probe (recommended; gateway takes time to initialize)
+    enabled: true
+    # -- Initial delay seconds
+    initialDelaySeconds: 10
+    # -- Period seconds
+    periodSeconds: 10
+    # -- Failure threshold (10 x 10s = 100s max startup time)
+    failureThreshold: 10
+  liveness:
+    # -- Enable liveness probe
+    enabled: true
+    # -- Initial delay seconds
+    initialDelaySeconds: 30
+    # -- Period seconds
+    periodSeconds: 30
+    # -- Timeout seconds
+    timeoutSeconds: 5
+    # -- Failure threshold
+    failureThreshold: 3
+  readiness:
+    # -- Enable readiness probe
+    enabled: true
+    # -- Initial delay seconds
+    initialDelaySeconds: 15
+    # -- Period seconds
+    periodSeconds: 10
+    # -- Timeout seconds
+    timeoutSeconds: 5
+    # -- Failure threshold
+    failureThreshold: 3
+
+# ============================================================================
+# Network
+# ============================================================================
+
+service:
+  # -- Service type (ClusterIP is typical since gateway connects outbound)
+  type: ClusterIP
+  # -- Health check port
+  port: 8099
+  # -- Additional service annotations
+  annotations: {}
+
+# -- Session affinity (set to "ClientIP" for scaled deployments)
+sessionAffinity: ""
+
+# ============================================================================
+# TLS / CA Certificates
+# ============================================================================
+
+# Custom CA certificates (for corporate proxies, self-signed certs, Zscaler)
+caCertificates:
+  # -- Inline CA certificates (PEM format, multiple certs can be concatenated)
+  inline: ""
+  # -- Mount CA certificates from an existing ConfigMap
+  existingConfigMap: ""
+  # -- Key within the ConfigMap
+  existingConfigMapKey: "ca-certificates.crt"
+
+# ============================================================================
+# Custom Python Packages
+# ============================================================================
+
+# -- Additional pip packages to install at startup (space-separated)
+# Example: "paramiko pywinrm"
+pipPackages: ""
+
+# ============================================================================
+# Storage
+# ============================================================================
+
+# Session recordings persistent storage
+recordings:
+  # -- Enable persistent volume for session recordings
+  enabled: false
+  # -- Storage class (empty uses cluster default)
+  storageClass: ""
+  # -- Access modes
+  accessModes:
+    - ReadWriteOnce
+  # -- Volume size
+  size: 10Gi
+  # -- Use existing PVC
+  existingClaim: ""
+  # -- Mount path inside container
+  mountPath: /opt/keeper/gateway/recordings
+  # -- Additional annotations for the PVC
+  annotations: {}
+
+# /dev/shm configuration (required for Chromium/RBI sessions)
+sharedMemory:
+  # -- Enable /dev/shm emptyDir with Memory medium
+  enabled: true
+  # -- Size limit for /dev/shm
+  sizeLimit: 256Mi
+
+# ============================================================================
+# AI Threat Detection
+# ============================================================================
+
+ai:
+  # -- Enable AI-powered session threat detection
+  enabled: false
+  # -- LLM provider: openai, openai-generic, azure-openai, anthropic, google-ai, vertex-ai, aws-bedrock
+  provider: ""
+  # -- Model name (e.g., gpt-4o-mini, claude-sonnet-4-20250514, gemini-pro)
+  model: ""
+  # -- API key (stored in K8s Secret)
+  apiKey: ""
+  # -- Use existing secret for API key
+  existingSecret: ""
+  # -- Key within the existing secret
+  existingSecretKey: "ai-api-key"
+  # -- Custom base URL for API endpoint (for openai-generic or proxied setups)
+  baseUrl: ""
+  # -- API version (Azure OpenAI only)
+  apiVersion: ""
+  # -- Project ID (Vertex AI / GCP only)
+  projectId: ""
+  # -- Location/region (Vertex AI / GCP only)
+  location: ""
+  # -- Service account credentials: file path, JSON string, or base64 (Vertex AI / GCP only)
+  credentials: ""
+
+# ============================================================================
+# Resource Management
+# ============================================================================
+
+resourceCheck:
+  # -- Enable memory-based connection limiting (rejects new sessions when memory is low)
+  enabled: true
+  # -- Minimum free memory percentage before rejecting new sessions
+  minHeadroomPercent: 15
+  # -- Check if RBI session can fit in available RAM before starting
+  checkRbiCapacity: true
+  # Per-protocol RAM tuning (httpRamMb, rdpRamMb, sshRamMb, etc.)
+  # can be set via extraEnv if needed. Defaults: RBI=800MB, RDP=75MB,
+  # SSH=70MB, VNC=65MB, MySQL/PostgreSQL/MSSQL=35MB, K8s=70MB, Tunnel=35MB.
+
+# ============================================================================
+# Extra Environment Variables
+# ============================================================================
+
+# -- Additional environment variables
+extraEnv: []
+  # - name: MY_VAR
+  #   value: "my-value"
+  # - name: SECRET_VAR
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: my-secret
+  #       key: my-key
+
+# -- Additional environment variables from ConfigMaps or Secrets
+extraEnvFrom: []
+  # - configMapRef:
+  #     name: my-configmap
+  # - secretRef:
+  #     name: my-secret
+
+# ============================================================================
+# Resources
+# ============================================================================
+
+resources:
+  limits:
+    cpu: "2"
+    memory: 2Gi
+  requests:
+    cpu: 250m
+    memory: 512Mi
+
+# ============================================================================
+# Scaling
+# ============================================================================
+
+# Horizontal Pod Autoscaler
+autoscaling:
+  # -- Enable HPA (multi-instance mode must be enabled for this gateway in Keeper before scaling beyond 1 replica)
+  enabled: false
+  # -- Minimum replicas
+  minReplicas: 1
+  # -- Maximum replicas
+  maxReplicas: 5
+  # -- Target CPU utilization percentage
+  targetCPUUtilizationPercentage: 70
+  # -- Target memory utilization percentage
+  targetMemoryUtilizationPercentage: 80
+
+# Pod disruption budget
+podDisruptionBudget:
+  # -- Enable PDB
+  enabled: false
+  # -- Minimum available pods
+  minAvailable: 1
+
+# ============================================================================
+# Scheduling
+# ============================================================================
+
+# -- Node selector
+nodeSelector: {}
+
+# -- Tolerations
+tolerations: []
+
+# -- Affinity rules
+affinity: {}
+
+# -- Priority class name
+priorityClassName: ""
+
+# -- Topology spread constraints
+topologySpreadConstraints: []
+
+# ============================================================================
+# Extra Volumes & Mounts
+# ============================================================================
+
+# -- Additional init containers
+initContainers: []
+  # - name: init-certs
+  #   image: busybox
+  #   command: ['sh', '-c', 'echo init']
+
+# -- Additional sidecar containers
+extraContainers: []
+  # - name: log-collector
+  #   image: fluentd:latest
+
+# -- Additional volumes
+extraVolumes: []
+
+# -- Additional volume mounts
+extraVolumeMounts: []
+
+# ============================================================================
+# Demo / Playground Services (optional)
+# ============================================================================
+# Deploy sample containers alongside the gateway for testing and demos.
+# These are NOT for production use. They provide targets for the gateway
+# to connect to (SSH, RDP, VNC, MySQL).
+#
+# NOTE: All passwords below are DEMO PLACEHOLDERS for local testing only.
+# They are intentionally fake and not used in any real system.
+# Replace them with values from the Keeper Vault wizard output.
+#
+# To use: provision a gateway with "Create with example records" in the
+# Keeper Vault, then set gateway.config with the resulting config.
+
+demo:
+  # -- Enable demo playground services
+  enabled: false
+
+  mysql:
+    # -- Enable MySQL demo server
+    enabled: true
+    image: mysql/mysql-server:8.0
+    # -- Root password (DEMO PLACEHOLDER - not a real credential)
+    rootPassword: "DEMO-ONLY-r00t-n0t-real-42"
+    # -- Database name
+    database: "salesdb"
+    # -- Application user
+    user: "sqluser"
+    # -- Application password (DEMO PLACEHOLDER - not a real credential)
+    password: "DEMO-ONLY-sql-placeholder-1337"
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+
+  sshPassword:
+    # -- Enable SSH server with password auth
+    enabled: true
+    image: keeper/playground-ssh:latest
+    # -- SSH user
+    user: "linuxuser"
+    # -- SSH password (DEMO PLACEHOLDER - not a real credential)
+    password: "DEMO-ONLY-ssh-UseTheForce-42"
+    resources:
+      limits:
+        cpu: 200m
+        memory: 128Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+
+  sshKey:
+    # -- Enable SSH server with key auth
+    enabled: true
+    image: keeper/playground-ssh:latest
+    # -- SSH user
+    user: "linuxuser"
+    # -- SSH public key
+    publicKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCg9ByNry0JKPaQJ8KOzMo/kO/OPzFyqGYa6D9/vRJUnOtlqAHQGTUW1nq/5G8ag5gsi5ihYEEEPSsgM9J9g/kG79pKxh/ksAdpFZm6WL5lVWQcKdqEaz36vkYlJLAWuUMeBM2sM7JvZy2dXfTiAnX46gbdJFV8bHO10AXfg5QqQ0Jt/XPqp8vRU8GjtuWbtqqq+f3GL326Q6NrEhaox9DTFW5yhHqsc79ulUti0y7FprC2T15LCVB/ub8DVunh8vVzI+WGA71vk1Vqi1mBDspbuvk59z3SSmL3PhjWDNBAauHZNDSRB7jD/IWfg2Y83MvUlLAlT++pwn3qC42yzyuz linuxuser@local"
+    resources:
+      limits:
+        cpu: 200m
+        memory: 128Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+
+  vnc:
+    # -- Enable VNC server
+    enabled: true
+    image: keeper/playground-vnc-xfce:latest
+    # -- VNC password (DEMO PLACEHOLDER - not a real credential)
+    password: "DEMO-vnc"
+    # -- VNC resolution
+    resolution: "1010x760"
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+
+  rdp:
+    # -- Enable RDP server
+    enabled: true
+    image: keeper/playground-rdp-xfce:latest
+    # -- Root password (DEMO PLACEHOLDER - not a real credential)
+    rootPassword: "DEMO-ONLY-rdp-r00t-GreatScott-88"
+    # -- RDP user
+    user: "rdpuser"
+    # -- RDP password (DEMO PLACEHOLDER - not a real credential)
+    password: "DEMO-ONLY-rdp-IAmYourFather-77"
+    # -- Shared memory size for RDP (needs large /dev/shm)
+    shmSizeLimit: 2Gi
+    resources:
+      limits:
+        cpu: "2"
+        memory: 2Gi
+      requests:
+        cpu: 250m
+        memory: 512Mi
