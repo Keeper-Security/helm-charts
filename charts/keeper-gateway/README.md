@@ -131,7 +131,18 @@ helm install keeper-gateway keeper/keeper-gateway \
   --set logging.format=json
 ```
 
-Supported levels: `error`, `warning`, `info`, `debug`, `trace`
+Supported levels: `error`, `warning`, `info`, `debug` (guacd also supports `trace`)
+
+You can set log levels independently:
+
+```bash
+# Same level for both
+--set logging.level=debug
+
+# Different levels
+--set logging.gatewayLevel=info \
+--set logging.guacdLevel=trace
+```
 
 Supported formats: `text`, `json`, `logfmt`, `cef`, `leef`, `rfc5424`, `rfc3164`, `gelf`
 
@@ -252,7 +263,9 @@ Control the verbosity and format of gateway logs.
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `logging.level` | Log level: `error`, `warning`, `info`, `debug`, `trace` | `"info"` |
+| `logging.level` | Log level for both gateway and guacd: `error`, `warning`, `info`, `debug` | `"info"` |
+| `logging.gatewayLevel` | Override log level for the gateway service only | `""` (uses `logging.level`) |
+| `logging.guacdLevel` | Override log level for guacd only (also supports `trace`) | `""` (uses `logging.level`) |
 | `logging.format` | Log format: `text`, `json`, `logfmt`, `cef`, `leef`, `rfc5424`, `rfc3164`, `gelf`. Structured formats available in gateway 1.8.0+. | `"text"` |
 | `syslog.enabled` | Forward logs to a syslog server | `false` |
 | `syslog.host` | Syslog server hostname or IP | `""` |

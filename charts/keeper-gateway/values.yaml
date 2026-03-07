@@ -87,8 +87,15 @@ gateway:
 # ============================================================================
 
 logging:
-  # -- Log level: error, warning, info, debug, trace
+  # -- Log level for both gateway and guacd: error, warning, info, debug
+  # Sets both services to the same level. Use gatewayLevel/guacdLevel below to override individually.
   level: "info"
+  # -- Override log level for the gateway Python service only: error, warning, info, debug
+  # Leave empty to use logging.level
+  gatewayLevel: ""
+  # -- Override log level for the guacd daemon only: error, warning, info, debug, trace
+  # Leave empty to use logging.level
+  guacdLevel: ""
   # -- Log format: text, json, logfmt, cef, leef, rfc5424, rfc3164, gelf
   format: "text"
 

@@ -2,7 +2,7 @@ apiVersion: v2
 name: keeper-gateway
 description: Keeper PAM Gateway - Remote access, secret rotation, and discovery for Keeper Security
 type: application
-version: 0.1.1
+version: 0.1.2
 appVersion: "1.7.6"
 kubeVersion: ">=1.25.0-0"
 home: https://www.keepersecurity.com
@@ -39,4 +39,14 @@ annotations:
       url: https://www.keepersecurity.com/support.html
   artifacthub.io/changes: |
     - kind: added
-      description: Initial Helm chart release for Keeper PAM Gateway
+      description: KeeperAI threat detection configuration
+    - kind: added
+      description: Memory-based resource management controls
+    - kind: added
+      description: Separate log level controls for gateway and guacd
+    - kind: added
+      description: Demo playground services (MySQL, SSH, VNC, RDP)
+    - kind: fixed
+      description: Health probes use tcpSocket to avoid 401 from non-localhost requests
+    - kind: changed
+      description: Removed OCI registry distribution, use Helm repository only

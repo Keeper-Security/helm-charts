@@ -8,7 +8,8 @@ data:
   {{- if .Values.gateway.acceptEula }}
   ACCEPT_EULA: {{ .Values.gateway.acceptEula | quote }}
   {{- end }}
-  LOG_LEVEL: {{ .Values.logging.level | quote }}
+  LOG_LEVEL: {{ default .Values.logging.level .Values.logging.guacdLevel | quote }}
+  KEEPER_GATEWAY_LOG_LEVEL: {{ default .Values.logging.level .Values.logging.gatewayLevel | quote }}
   KEEPER_GATEWAY_LOG_FORMAT: {{ .Values.logging.format | quote }}
   {{- if .Values.healthCheck.enabled }}
   KEEPER_GATEWAY_HEALTH_CHECK_ENABLED: "true"
