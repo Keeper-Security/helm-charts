@@ -2,7 +2,7 @@ apiVersion: v2
 name: keeper-gateway
 description: Keeper PAM Gateway - Remote access, secret rotation, and discovery for Keeper Security
 type: application
-version: 0.1.0
+version: 0.1.1
 appVersion: "1.7.6"
 kubeVersion: ">=1.25.0-0"
 home: https://www.keepersecurity.com
