@@ -4,6 +4,67 @@ entries:
   - annotations:
       artifacthub.io/category: security
       artifacthub.io/changes: |
+        - kind: changed
+          description: "Probes now use exec (keeper-gateway health-check CLI) instead of tcpSocket for reliable health checking"
+        - kind: changed
+          description: "Security context with SYS_ADMIN, SYS_CHROOT, SETUID, SETGID capabilities and Unconfined seccomp for CEF/RBI support"
+        - kind: changed
+          description: "AppArmor set to unconfined via pod annotation (K8s <1.30 compatible) for CEF namespace isolation"
+        - kind: changed
+          description: "Health check binds to 127.0.0.1 (exec probes run inside container, more secure)"
+        - kind: changed
+          description: "Increased default resources: 4Gi memory limit (was 2Gi), 1Gi request (was 512Mi), 4 CPU limit (was 2)"
+        - kind: changed
+          description: "Increased default /dev/shm to 2Gi (was 256Mi) for RBI/Chromium sessions"
+        - kind: added
+          description: "/etc/guacamole emptyDir volume for guacd autofill rules configuration"
+        - kind: added
+          description: "Security hardening documentation for AppArmor on Debian/Ubuntu nodes"
+      artifacthub.io/license: MIT
+      artifacthub.io/links: |
+        - name: Documentation
+          url: https://docs.keeper.io/en/keeperpam/privileged-access-manager/getting-started/gateways
+        - name: Docker Hub
+          url: https://hub.docker.com/r/keeper/gateway
+        - name: Support
+          url: https://www.keepersecurity.com/support.html
+      artifacthub.io/operator: "false"
+      artifacthub.io/prerelease: "false"
+    apiVersion: v2
+    appVersion: 1.7.6
+    created: "2026-03-17T05:13:57.567878793Z"
+    description: Keeper PAM Gateway - Remote access, secret rotation, and discovery
+      for Keeper Security
+    digest: a2f45869348b980428fd660c5dce9e7468dfd1665ad87f33ab6dcc50e5a5b6a8
+    home: https://www.keepersecurity.com
+    icon: https://keepersecurity.com/vault/images/keeper_icons/icon_rounded_256.png
+    keywords:
+    - keeper
+    - pam
+    - gateway
+    - remote-access
+    - rdp
+    - ssh
+    - vnc
+    - secret-rotation
+    - discovery
+    - security
+    - privileged-access
+    kubeVersion: '>=1.25.0-0'
+    maintainers:
+    - email: pam@keepersecurity.com
+      name: Keeper Security
+      url: https://www.keepersecurity.com
+    name: keeper-gateway
+    sources:
+    - https://github.com/Keeper-Security/helm-charts
+    type: application
+    urls:
+    - https://keeper-security.github.io/helm-charts/keeper-gateway-0.2.0.tgz
+    version: 0.2.0
+  - annotations:
+      artifacthub.io/category: security
+      artifacthub.io/changes: |
         - kind: added
           description: KeeperAI threat detection configuration with support for OpenAI, Anthropic, Azure, GCP, and AWS Bedrock
         - kind: added
@@ -36,7 +97,7 @@ entries:
       artifacthub.io/prerelease: "false"
     apiVersion: v2
     appVersion: 1.7.6
-    created: "2026-03-07T19:01:49.205223298Z"
+    created: "2026-03-17T05:13:57.566672807Z"
     description: Keeper PAM Gateway - Remote access, secret rotation, and discovery
       for Keeper Security
     digest: 9371af399fd80ad0bc202e9bc9c7e0416af8e663c973ca4663a662da0847d21b
@@ -93,7 +154,7 @@ entries:
       artifacthub.io/prerelease: "false"
     apiVersion: v2
     appVersion: 1.7.6
-    created: "2026-03-07T19:01:49.203881375Z"
+    created: "2026-03-17T05:13:57.564786561Z"
     description: Keeper PAM Gateway - Remote access, secret rotation, and discovery
       for Keeper Security
     digest: f17ebea89549f554323223553fb9ed4b2182271b2184433cc3f10f041479f13d
@@ -140,7 +201,7 @@ entries:
       artifacthub.io/prerelease: "false"
     apiVersion: v2
     appVersion: 1.7.6
-    created: "2026-03-07T19:01:49.202754633Z"
+    created: "2026-03-17T05:13:57.563591947Z"
     description: Keeper PAM Gateway - Remote access, secret rotation, and discovery
       for Keeper Security
     digest: 823d7a4bb6379635a68ef8a7155e46bcc11bb9089856b0bcdd243932607efab0
@@ -187,7 +248,7 @@ entries:
       artifacthub.io/prerelease: "false"
     apiVersion: v2
     appVersion: 1.7.6
-    created: "2026-03-07T19:01:49.201600729Z"
+    created: "2026-03-17T05:13:57.562385401Z"
     description: Keeper PAM Gateway - Remote access, secret rotation, and discovery
       for Keeper Security
     digest: c45bc822413625a862110ca90e6a632b9be711c7e72c57ba8a72894b8ebb293f
@@ -237,7 +298,7 @@ entries:
       artifacthub.io/prerelease: "false"
     apiVersion: v2
     appVersion: 0.10.0
-    created: "2026-03-07T19:01:49.206398181Z"
+    created: "2026-03-17T05:13:57.568637124Z"
     description: Keeper Secrets Manager Kubernetes Injector - Inject secrets into
       pods at runtime
     digest: b62a8b143c1b2146832b5b30ca35141126717ddb29ec969248aed89009958212
@@ -264,4 +325,4 @@ entries:
     urls:
     - https://keeper-security.github.io/helm-charts/keeper-injector-0.10.0.tgz
     version: 0.10.0
-generated: "2026-03-07T19:01:49.200266871Z"
+generated: "2026-03-17T05:13:57.561069562Z"
