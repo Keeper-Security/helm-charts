@@ -2,7 +2,7 @@ apiVersion: v2
 name: keeper-gateway
 description: Keeper PAM Gateway - Remote access, secret rotation, and discovery for Keeper Security
 type: application
-version: 0.1.3
+version: 0.2.0
 appVersion: "1.7.6"
 kubeVersion: ">=1.25.0-0"
 home: https://www.keepersecurity.com
@@ -38,23 +38,19 @@ annotations:
     - name: Support
       url: https://www.keepersecurity.com/support.html
   artifacthub.io/changes: |
-    - kind: added
-      description: KeeperAI threat detection configuration with support for OpenAI, Anthropic, Azure, GCP, and AWS Bedrock
-    - kind: added
-      description: Memory-based resource management controls (connection limiting when memory is low)
-    - kind: added
-      description: Separate log level controls for gateway service and guacd daemon
-    - kind: added
-      description: Demo playground services for testing (MySQL, SSH, VNC, RDP)
-    - kind: added
-      description: MIT license, .helmignore files, and Helm test
-    - kind: fixed
-      description: Health probes use tcpSocket to avoid 401 from non-localhost requests
-    - kind: fixed
-      description: Set both LOG_LEVEL (guacd) and KEEPER_GATEWAY_LOG_LEVEL (gateway) in configmap
     - kind: changed
-      description: Session recordings are encrypted (AES-256-GCM) and streamed to Keeper in real time
+      description: "Probes now use exec (keeper-gateway health-check CLI) instead of tcpSocket for reliable health checking"
     - kind: changed
-      description: Use Helm repository as only install method (removed OCI references)
+      description: "Security context with SYS_ADMIN, SYS_CHROOT, SETUID, SETGID capabilities and Unconfined seccomp for CEF/RBI support"
     - kind: changed
-      description: Improved documentation with examples, explanatory text, and configuration reference
+      description: "AppArmor set to unconfined via pod annotation (K8s <1.30 compatible) for CEF namespace isolation"
+    - kind: changed
+      description: "Health check binds to 127.0.0.1 (exec probes run inside container, more secure)"
+    - kind: changed
+      description: "Increased default resources: 4Gi memory limit (was 2Gi), 1Gi request (was 512Mi), 4 CPU limit (was 2)"
+    - kind: changed
+      description: "Increased default /dev/shm to 2Gi (was 256Mi) for RBI/Chromium sessions"
+    - kind: added
+      description: "/etc/guacamole emptyDir volume for guacd autofill rules configuration"
+    - kind: added
+      description: "Security hardening documentation for AppArmor on Debian/Ubuntu nodes"

@@ -38,15 +38,38 @@ podAnnotations: {}
 podLabels: {}
 
 # Pod security context
-# NOTE: The gateway container starts as root for CA cert installation and pip packages,
-# then drops privileges internally to the keeper-gw user before starting services.
+# NOTE: The gateway starts as root for CA cert installation and pip packages,
+# then drops to keeper-gw before starting services.
 # Do NOT set runAsNonRoot: true or runAsUser here.
 podSecurityContext: {}
 
 # Container security context
-# NOTE: Do NOT restrict to non-root. The entrypoint requires root for CA cert
-# installation and pip packages, then drops privileges to keeper-gw.
-securityContext: {}
+# The gateway needs elevated privileges for two reasons:
+# 1. Entrypoint runs as root for CA certs and pip packages (then drops to keeper-gw)
+# 2. CEF/Chromium (RBI sessions) requires namespace isolation (unshare, mount, clone)
+#
+# seccomp is Unconfined because CEF needs syscalls blocked by default profiles.
+# AppArmor is handled via pod annotation (see below) for K8s <1.30 compatibility.
+# For hardened deployments, see the Security Hardening section in the README.
+securityContext:
+  capabilities:
+    add:
+      - SYS_ADMIN
+      - SYS_CHROOT
+      - SETUID
+      - SETGID
+  seccompProfile:
+    type: Unconfined
+
+# AppArmor profile for the gateway container.
+# Set to "unconfined" by default because CEF/Chromium requires syscalls that
+# default AppArmor profiles block. This mainly affects Debian/Ubuntu-based nodes
+# where AppArmor is enabled by default. Rocky Linux, Amazon Linux, and most
+# RHEL-based distributions do not use AppArmor and are unaffected.
+# For hardened deployments on AppArmor-enabled nodes, install the custom profile
+# and set this to "localhost/gateway-apparmor-profile".
+# Uses pod annotation for compatibility with Kubernetes <1.30.
+appArmorProfile: "unconfined"
 
 # -- Deployment strategy (Recreate for single-instance, RollingUpdate for multi-instance)
 strategy:
@@ -127,36 +150,34 @@ healthCheck:
   existingAuthTokenSecretKey: "health-check-token"
 
 # Probe configuration
+# Probes use the gateway's built-in health-check CLI command which runs
+# inside the container, avoiding network-level auth issues.
 probes:
   startup:
     # -- Enable startup probe (recommended; gateway takes time to initialize)
     enabled: true
-    # -- Initial delay seconds
-    initialDelaySeconds: 10
     # -- Period seconds
-    periodSeconds: 10
-    # -- Failure threshold (10 x 10s = 100s max startup time)
-    failureThreshold: 10
+    periodSeconds: 5
+    # -- Timeout seconds
+    timeoutSeconds: 5
+    # -- Failure threshold (24 x 5s = 120s max startup time)
+    failureThreshold: 24
   liveness:
     # -- Enable liveness probe
     enabled: true
-    # -- Initial delay seconds
-    initialDelaySeconds: 30
     # -- Period seconds
     periodSeconds: 30
     # -- Timeout seconds
-    timeoutSeconds: 5
+    timeoutSeconds: 10
     # -- Failure threshold
     failureThreshold: 3
   readiness:
     # -- Enable readiness probe
     enabled: true
-    # -- Initial delay seconds
-    initialDelaySeconds: 15
     # -- Period seconds
-    periodSeconds: 10
+    periodSeconds: 30
     # -- Timeout seconds
-    timeoutSeconds: 5
+    timeoutSeconds: 10
     # -- Failure threshold
     failureThreshold: 3
 
@@ -222,8 +243,8 @@ recordings:
 sharedMemory:
   # -- Enable /dev/shm emptyDir with Memory medium
   enabled: true
-  # -- Size limit for /dev/shm
-  sizeLimit: 256Mi
+  # -- Size limit for /dev/shm (increase for heavy RBI/RDP usage)
+  sizeLimit: 2Gi
 
 # ============================================================================
 # AI Threat Detection
@@ -295,11 +316,11 @@ extraEnvFrom: []
 
 resources:
   limits:
-    cpu: "2"
-    memory: 2Gi
+    cpu: "4"
+    memory: 4Gi
   requests:
     cpu: 250m
-    memory: 512Mi
+    memory: 1Gi
 
 # ============================================================================
 # Scaling

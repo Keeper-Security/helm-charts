@@ -230,9 +230,59 @@ helm install keeper-gateway keeper/keeper-gateway \
 
 ## Security Context
 
-The gateway container starts as root to install CA certificates and Python packages at startup. It drops privileges to the `keeper-gw` user before starting services.
+The gateway requires elevated privileges for two reasons:
 
-Do not set `runAsNonRoot: true` or `runAsUser` in the pod or container security context. If your cluster enforces Pod Security Standards, you may need an exemption for the gateway namespace.
+1. **Startup**: The entrypoint runs as root to install CA certificates and Python packages, then drops to the `keeper-gw` user before starting services.
+2. **RBI sessions**: CEF/Chromium requires Linux namespace isolation (`unshare`, `mount`, `clone` syscalls) for D-Bus sandboxing, which needs `CAP_SYS_ADMIN` and an unconfined seccomp profile.
+
+The chart defaults to:
+- Capabilities: `SYS_ADMIN`, `SYS_CHROOT`, `SETUID`, `SETGID`
+- Seccomp: `Unconfined`
+- AppArmor: `unconfined` (via pod annotation for K8s <1.30 compatibility)
+
+Do not set `runAsNonRoot: true` or `runAsUser`. If your cluster enforces Pod Security Standards, you may need an exemption for the gateway namespace.
+
+### Security Hardening (optional)
+
+The default Unconfined profiles work on all clusters. For hardened deployments, you can install custom security profiles that allow only the specific syscalls CEF needs.
+
+**AppArmor** (Debian/Ubuntu nodes only — RHEL, Rocky Linux, Amazon Linux do not use AppArmor):
+
+```bash
+# On each Debian/Ubuntu node where the gateway may run:
+curl -O https://raw.githubusercontent.com/Keeper-Security/KeeperPAM/main/gateway/gateway-apparmor-profile
+sudo apparmor_parser -r gateway-apparmor-profile
+sudo cp gateway-apparmor-profile /etc/apparmor.d/
+
+# Then in your Helm values:
+appArmorProfile: "localhost/gateway-apparmor-profile"
+```
+
+**Seccomp** (all node types):
+
+```bash
+# On each node, copy the custom seccomp profile to the kubelet directory:
+curl -O https://raw.githubusercontent.com/Keeper-Security/KeeperPAM/main/gateway/docker-seccomp.json
+sudo mkdir -p /var/lib/kubelet/seccomp/profiles
+sudo cp docker-seccomp.json /var/lib/kubelet/seccomp/profiles/keeper-gateway.json
+
+# Then in your Helm values:
+securityContext:
+  capabilities:
+    add: [SYS_ADMIN, SYS_CHROOT, SETUID, SETGID]
+  seccompProfile:
+    type: Localhost
+    localhostProfile: profiles/keeper-gateway.json
+```
+
+**Tailscale sidecar** (for private network access):
+
+```yaml
+podAnnotations:
+  tailscale-sidecar/restart: "enabled"
+  tailscale_tag: "tag:keeper"
+  tailscale_hostname: "keeper-gateway"
+```
 
 ## Configuration Reference
 
@@ -274,37 +324,26 @@ Control the verbosity and format of gateway logs.
 
 ### Health Check & Probes
 
-The health check exposes an HTTP endpoint that Kubernetes uses to determine if the gateway is running and ready to accept connections.
-
-Example enabling with a custom auth token:
-
-```yaml
-healthCheck:
-  enabled: true
-  port: 8099
-  authToken: "my-monitoring-token"
-```
+Probes use the gateway's built-in `keeper-gateway health-check` CLI command, which runs inside the container and checks the actual gateway process health. The health check HTTP server binds to `127.0.0.1` (localhost only).
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `healthCheck.enabled` | Enable the `/health` HTTP endpoint | `true` |
-| `healthCheck.port` | Port for the health check server | `8099` |
-| `healthCheck.authToken` | Optional Bearer token to secure the `/health` endpoint. External monitoring tools can use this token. Kubernetes probes always use TCP socket checks since the gateway rejects unauthenticated non-localhost requests. | `""` |
+| `healthCheck.enabled` | Enable the health check server and probes | `true` |
+| `healthCheck.port` | Port for the health check server (localhost only) | `8099` |
+| `healthCheck.authToken` | Optional Bearer token for the `/health` HTTP endpoint (for external monitoring tools) | `""` |
 | `healthCheck.existingAuthTokenSecret` | Use a pre-created secret for the auth token | `""` |
 | `healthCheck.existingAuthTokenSecretKey` | Key within the existing auth token secret | `"health-check-token"` |
 | `probes.startup.enabled` | Enable startup probe (gives the gateway time to initialize and connect to Keeper) | `true` |
-| `probes.startup.initialDelaySeconds` | Seconds to wait before first check | `10` |
-| `probes.startup.periodSeconds` | How often to check | `10` |
-| `probes.startup.failureThreshold` | How many failures before restarting (10 x 10s = 100s max startup) | `10` |
+| `probes.startup.periodSeconds` | How often to check | `5` |
+| `probes.startup.timeoutSeconds` | Seconds before a check times out | `5` |
+| `probes.startup.failureThreshold` | How many failures before restarting (24 x 5s = 120s max startup) | `24` |
 | `probes.liveness.enabled` | Enable liveness probe (restarts the pod if the gateway becomes unresponsive) | `true` |
-| `probes.liveness.initialDelaySeconds` | Seconds to wait before first check | `30` |
 | `probes.liveness.periodSeconds` | How often to check | `30` |
-| `probes.liveness.timeoutSeconds` | Seconds before a check times out | `5` |
+| `probes.liveness.timeoutSeconds` | Seconds before a check times out | `10` |
 | `probes.liveness.failureThreshold` | Failures before restart | `3` |
 | `probes.readiness.enabled` | Enable readiness probe (prevents traffic to a pod that isn't ready) | `true` |
-| `probes.readiness.initialDelaySeconds` | Seconds to wait before first check | `15` |
-| `probes.readiness.periodSeconds` | How often to check | `10` |
-| `probes.readiness.timeoutSeconds` | Seconds before a check times out | `5` |
+| `probes.readiness.periodSeconds` | How often to check | `30` |
+| `probes.readiness.timeoutSeconds` | Seconds before a check times out | `10` |
 | `probes.readiness.failureThreshold` | Failures before marking unready | `3` |
 
 ### KeeperAI Threat Detection
@@ -349,9 +388,9 @@ The gateway tracks available memory and can reject new sessions when resources a
 | `resourceCheck.minHeadroomPercent` | Minimum free memory percentage to maintain (higher = more conservative) | `15` |
 | `resourceCheck.checkRbiCapacity` | Pre-check if an RBI session will fit in RAM before starting it | `true` |
 | `resources.requests.cpu` | CPU request | `250m` |
-| `resources.requests.memory` | Memory request | `512Mi` |
-| `resources.limits.cpu` | CPU limit | `2` |
-| `resources.limits.memory` | Memory limit. Increase this if running many concurrent sessions, especially RBI. | `2Gi` |
+| `resources.requests.memory` | Memory request | `1Gi` |
+| `resources.limits.cpu` | CPU limit | `4` |
+| `resources.limits.memory` | Memory limit. Increase for many concurrent sessions, especially RBI (~800MB each). | `4Gi` |
 
 Per-protocol RAM estimates (e.g., RDP=75MB, SSH=70MB, RBI=800MB) can be tuned via `extraEnv` if needed. See the gateway documentation for details.
 
@@ -379,7 +418,7 @@ Recordings are encrypted and streamed to Keeper in real time. The local storage 
 | `recordings.mountPath` | Path inside the container | `/opt/keeper/gateway/recordings` |
 | `recordings.annotations` | Additional PVC annotations (e.g., for storage class options) | `{}` |
 | `sharedMemory.enabled` | Mount /dev/shm with memory-backed storage (required for RBI/Chromium sessions) | `true` |
-| `sharedMemory.sizeLimit` | Size limit for /dev/shm | `256Mi` |
+| `sharedMemory.sizeLimit` | Size limit for /dev/shm | `2Gi` |
 
 ### Network
 
@@ -444,7 +483,8 @@ Escape hatches for advanced configurations not covered by the chart's built-in v
 | `podAnnotations` | Additional pod annotations | `{}` |
 | `podLabels` | Additional pod labels | `{}` |
 | `podSecurityContext` | Pod-level security context (see [Security Context](#security-context)) | `{}` |
-| `securityContext` | Container-level security context | `{}` |
+| `securityContext` | Container-level security context | SYS_ADMIN, SYS_CHROOT, SETUID, SETGID + Unconfined seccomp |
+| `appArmorProfile` | AppArmor profile (pod annotation for K8s <1.30). Set to `"localhost/gateway-apparmor-profile"` for hardened deployments on Debian/Ubuntu nodes. | `"unconfined"` |
 
 Example — add a custom environment variable and a log collector sidecar:
 

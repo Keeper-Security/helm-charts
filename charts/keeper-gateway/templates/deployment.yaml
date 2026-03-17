@@ -19,6 +19,9 @@ spec:
     metadata:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if .Values.appArmorProfile }}
+        container.apparmor.security.kubernetes.io/gateway: {{ .Values.appArmorProfile }}
+        {{- end }}
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -116,26 +119,30 @@ spec:
           {{- end }}
           {{- if and .Values.healthCheck.enabled .Values.probes.startup.enabled }}
           startupProbe:
-            tcpSocket:
-              port: health
-            initialDelaySeconds: {{ .Values.probes.startup.initialDelaySeconds }}
+            exec:
+              command:
+                - /usr/local/bin/keeper-gateway
+                - health-check
             periodSeconds: {{ .Values.probes.startup.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.startup.timeoutSeconds | default 5 }}
             failureThreshold: {{ .Values.probes.startup.failureThreshold }}
           {{- end }}
           {{- if and .Values.healthCheck.enabled .Values.probes.liveness.enabled }}
           livenessProbe:
-            tcpSocket:
-              port: health
-            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            exec:
+              command:
+                - /usr/local/bin/keeper-gateway
+                - health-check
             periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
             timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
             failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
           {{- end }}
           {{- if and .Values.healthCheck.enabled .Values.probes.readiness.enabled }}
           readinessProbe:
-            tcpSocket:
-              port: health
-            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            exec:
+              command:
+                - /usr/local/bin/keeper-gateway
+                - health-check
             periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
             failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
@@ -151,6 +158,8 @@ spec:
             - name: dshm
               mountPath: /dev/shm
             {{- end }}
+            - name: guacd-configs
+              mountPath: /etc/guacamole
             {{- if .Values.recordings.enabled }}
             - name: recordings
               mountPath: {{ .Values.recordings.mountPath }}
@@ -173,6 +182,8 @@ spec:
             medium: Memory
             sizeLimit: {{ .Values.sharedMemory.sizeLimit }}
         {{- end }}
+        - name: guacd-configs
+          emptyDir: {}
         {{- if .Values.recordings.enabled }}
         - name: recordings
           {{- if .Values.recordings.existingClaim }}

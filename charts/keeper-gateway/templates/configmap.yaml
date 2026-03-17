@@ -13,7 +13,7 @@ data:
   KEEPER_GATEWAY_LOG_FORMAT: {{ .Values.logging.format | quote }}
   {{- if .Values.healthCheck.enabled }}
   KEEPER_GATEWAY_HEALTH_CHECK_ENABLED: "true"
-  KEEPER_GATEWAY_HEALTH_CHECK_HOST: "0.0.0.0"
+  KEEPER_GATEWAY_HEALTH_CHECK_HOST: "127.0.0.1"
   KEEPER_GATEWAY_HEALTH_CHECK_PORT: {{ .Values.healthCheck.port | quote }}
   {{- end }}
   {{- if .Values.syslog.enabled }}
