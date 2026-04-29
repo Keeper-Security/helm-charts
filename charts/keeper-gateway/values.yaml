@@ -49,7 +49,7 @@ podSecurityContext: {}
 # 2. CEF/Chromium (RBI sessions) requires namespace isolation (unshare, mount, clone)
 #
 # seccomp is Unconfined because CEF needs syscalls blocked by default profiles.
-# AppArmor is handled via pod annotation (see below) for K8s <1.30 compatibility.
+# AppArmor is handled by appArmorProfile below.
 # For hardened deployments, see the Security Hardening section in the README.
 securityContext:
   capabilities:
@@ -68,7 +68,9 @@ securityContext:
 # RHEL-based distributions do not use AppArmor and are unaffected.
 # For hardened deployments on AppArmor-enabled nodes, install the custom profile
 # and set this to "localhost/gateway-apparmor-profile".
-# Uses pod annotation for compatibility with Kubernetes <1.30.
+# The chart always emits the legacy pod annotation for compatibility with
+# Kubernetes <1.30, and also emits native container securityContext.appArmorProfile
+# when rendering against Kubernetes 1.30+.
 appArmorProfile: "unconfined"
 
 # -- Deployment strategy (Recreate for single-instance, RollingUpdate for multi-instance)

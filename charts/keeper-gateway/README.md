@@ -238,7 +238,7 @@ The gateway requires elevated privileges for two reasons:
 The chart defaults to:
 - Capabilities: `SYS_ADMIN`, `SYS_CHROOT`, `SETUID`, `SETGID`
 - Seccomp: `Unconfined`
-- AppArmor: `unconfined` (via pod annotation for K8s <1.30 compatibility)
+- AppArmor: `unconfined` (legacy pod annotation on all clusters, plus native container `appArmorProfile` when rendering for Kubernetes 1.30+)
 
 Do not set `runAsNonRoot: true` or `runAsUser`. If your cluster enforces Pod Security Standards, you may need an exemption for the gateway namespace.
 
@@ -256,6 +256,12 @@ sudo cp gateway-apparmor-profile /etc/apparmor.d/
 
 # Then in your Helm values:
 appArmorProfile: "localhost/gateway-apparmor-profile"
+```
+
+The chart renders the legacy `container.apparmor.security.kubernetes.io/gateway` pod annotation for compatibility with Kubernetes versions before 1.30. When Helm renders against Kubernetes 1.30 or later, the same `appArmorProfile` value is also translated to the native container `securityContext.appArmorProfile` field. To verify that the profile is applied to the running gateway container:
+
+```bash
+kubectl exec -n keeper-gateway deploy/keeper-gateway -- cat /proc/1/attr/current
 ```
 
 **Seccomp** (all node types):
@@ -484,7 +490,7 @@ Escape hatches for advanced configurations not covered by the chart's built-in v
 | `podLabels` | Additional pod labels | `{}` |
 | `podSecurityContext` | Pod-level security context (see [Security Context](#security-context)) | `{}` |
 | `securityContext` | Container-level security context | SYS_ADMIN, SYS_CHROOT, SETUID, SETGID + Unconfined seccomp |
-| `appArmorProfile` | AppArmor profile (pod annotation for K8s <1.30). Set to `"localhost/gateway-apparmor-profile"` for hardened deployments on Debian/Ubuntu nodes. | `"unconfined"` |
+| `appArmorProfile` | AppArmor profile. The chart emits the legacy pod annotation on all Kubernetes versions and native container `securityContext.appArmorProfile` when rendering for Kubernetes 1.30+. Set to `"localhost/gateway-apparmor-profile"` for hardened deployments on Debian/Ubuntu nodes. | `"unconfined"` |
 
 Example — add a custom environment variable and a log collector sidecar:
 

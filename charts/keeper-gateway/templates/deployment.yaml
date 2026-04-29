@@ -50,7 +50,14 @@ spec:
       {{- end }}
       containers:
         - name: gateway
-          {{- with .Values.securityContext }}
+          {{- $securityContext := deepCopy (.Values.securityContext | default dict) }}
+          {{- if and (semverCompare ">=1.30.0-0" .Capabilities.KubeVersion.Version) (not (hasKey $securityContext "appArmorProfile")) }}
+          {{- $nativeAppArmorProfile := include "keeper-gateway.nativeAppArmorProfile" . | fromYaml }}
+          {{- if $nativeAppArmorProfile }}
+          {{- $_ := set $securityContext "appArmorProfile" $nativeAppArmorProfile }}
+          {{- end }}
+          {{- end }}
+          {{- with $securityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
