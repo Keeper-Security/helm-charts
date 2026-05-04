@@ -2,8 +2,8 @@ apiVersion: v2
 name: keeper-gateway
 description: Keeper PAM Gateway - Remote access, secret rotation, and discovery for Keeper Security
 type: application
-version: 0.2.1
-appVersion: "1.7.6"
+version: 0.2.2
+appVersion: "1.8.0"
 kubeVersion: ">=1.25.0-0"
 home: https://www.keepersecurity.com
 icon: https://keepersecurity.com/vault/images/keeper_icons/icon_rounded_256.png
@@ -38,6 +38,8 @@ annotations:
     - name: Support
       url: https://www.keepersecurity.com/support.html
   artifacthub.io/changes: |
+    - kind: changed
+      description: "Bump appVersion to 1.8.0 (Keeper Gateway)"
     - kind: changed
       description: "Probes now use exec (keeper-gateway health-check CLI) instead of tcpSocket for reliable health checking"
     - kind: changed
