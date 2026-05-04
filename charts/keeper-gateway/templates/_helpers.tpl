@@ -66,3 +66,25 @@ Create the gateway image reference
 {{- $tag := default .Chart.AppVersion .Values.image.tag }}
 {{- printf "%s:%s" .Values.image.repository $tag }}
 {{- end }}
+
+{{/*
+Translate .Values.appArmorProfile from legacy annotation syntax to the native
+container securityContext.appArmorProfile object used by Kubernetes 1.30+.
+*/}}
+{{- define "keeper-gateway.nativeAppArmorProfile" -}}
+{{- $profile := trim (default "" .Values.appArmorProfile) -}}
+{{- if $profile -}}
+{{- $normalized := lower $profile -}}
+{{- if eq $normalized "unconfined" }}
+type: Unconfined
+{{- else if eq $normalized "runtime/default" }}
+type: RuntimeDefault
+{{- else if hasPrefix "localhost/" $profile }}
+type: Localhost
+localhostProfile: {{ trimPrefix "localhost/" $profile | quote }}
+{{- else }}
+type: Localhost
+localhostProfile: {{ $profile | quote }}
+{{- end }}
+{{- end -}}
+{{- end }}
