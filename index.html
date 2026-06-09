@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Keeper Security Helm Charts</title>
+  <meta name="description" content="Official Helm chart repository for deploying Keeper Security products on Kubernetes." />
+  <link rel="icon" href="https://keepersecurity.com/vault/images/keeper_icons/icon_rounded_256.png" />
+  <style>
+    /* GitHub Primer color tokens — adapts to the viewer's theme, like a GitHub README */
+    :root {
+      --bg: #ffffff;
+      --subtle: #f6f8fa;
+      --border: #d0d7de;
+      --text: #1f2328;
+      --muted: #59636e;
+      --link: #0969da;
+      --note-border: #0969da;
+      --note-bg: #ddf4ff;
+      --note-text: #0a3069;
+      --code-bg: #f6f8fa;
+      --code-text: #1f2328;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d1117;
+        --subtle: #161b22;
+        --border: #30363d;
+        --text: #e6edf3;
+        --muted: #7d8590;
+        --link: #2f81f7;
+        --note-border: #2f81f7;
+        --note-bg: rgba(56,139,253,0.1);
+        --note-text: #c9d1d9;
+        --code-bg: #161b22;
+        --code-text: #e6edf3;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+      font-size: 16px; line-height: 1.6;
+    }
+    .wrap { max-width: 880px; margin: 0 auto; padding: 48px 24px 72px; }
+    header img.logo { height: 36px; display: block; margin-bottom: 20px; }
+    h1 { font-weight: 600; font-size: 1.9rem; margin: 0; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    .tagline { color: var(--muted); margin: 12px 0 28px; }
+    .note {
+      background: var(--note-bg); border-left: 4px solid var(--note-border);
+      border-radius: 6px; padding: 12px 16px; margin: 0 0 28px; color: var(--note-text); font-size: 0.93rem;
+    }
+    .note .label { color: var(--note-border); font-weight: 600; display: block; margin-bottom: 2px; }
+    h2 { font-weight: 600; font-size: 1.2rem; margin: 32px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    pre {
+      background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px;
+      padding: 14px 16px; overflow-x: auto; margin: 0 0 16px;
+    }
+    code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; font-size: 0.85rem; color: var(--code-text); }
+    .cards { display: grid; gap: 16px; grid-template-columns: 1fr; }
+    @media (min-width: 700px) { .cards { grid-template-columns: 1fr 1fr; } }
+    .card { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 16px 18px; }
+    .card h3 { margin: 0 0 6px; font-size: 1rem; font-weight: 600; }
+    .card h3 a { color: var(--link); }
+    .card p { color: var(--muted); margin: 0 0 14px; font-size: 0.9rem; }
+    .card pre { margin-bottom: 12px; font-size: 0.76rem; background: var(--subtle); }
+    .links a { font-size: 0.85rem; margin-right: 16px; }
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .oci { color: var(--muted); font-size: 0.9rem; margin-top: 24px; }
+    footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.88rem; }
+    footer a { margin-right: 18px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="keeper-logo-reverse.svg" />
+        <img class="logo" src="keeper-logo-full-color.svg" alt="Keeper Security" />
+      </picture>
+      <h1>Helm Charts</h1>
+    </header>
+    <p class="tagline">Official Helm chart repository for deploying Keeper Security products on Kubernetes.</p>
+
+    <div class="note">
+      <span class="label">Note</span>
+      This URL is a <strong>Helm repository endpoint</strong>, not a web page &mdash; add it with the
+      <code>helm</code> CLI below. (Browsing it directly only serves <code>index.yaml</code> and the chart packages.)
+    </div>
+
+    <h2>Add the repository</h2>
+    <pre><code>helm repo add keeper https://keeper-security.github.io/helm-charts
+helm repo update</code></pre>
+
+    <h2>Available charts</h2>
+    <div class="cards">
+      <div class="card">
+        <h3><a href="https://artifacthub.io/packages/helm/keeper-security/keeper-gateway">keeper-gateway</a></h3>
+        <p>Keeper PAM Gateway &mdash; remote access, secret rotation, and discovery.</p>
+        <pre><code>helm install keeper-gateway keeper/keeper-gateway \
+  --namespace keeper-gateway --create-namespace \
+  --set gateway.acceptEula=Y \
+  --set gateway.config='&lt;base64-config&gt;'</code></pre>
+        <div class="links">
+          <a href="https://artifacthub.io/packages/helm/keeper-security/keeper-gateway">ArtifactHub</a>
+          <a href="https://docs.keeper.io/keeperpam/privileged-access-manager/getting-started/gateways">Docs</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><a href="https://artifacthub.io/packages/helm/keeper-security/keeper-injector">keeper-injector</a></h3>
+        <p>Keeper Secrets Manager Kubernetes Injector &mdash; inject secrets into pods at runtime.</p>
+        <pre><code>helm install keeper-injector keeper/keeper-injector \
+  --namespace keeper-security --create-namespace</code></pre>
+        <div class="links">
+          <a href="https://artifacthub.io/packages/helm/keeper-security/keeper-injector">ArtifactHub</a>
+          <a href="https://docs.keeper.io/secrets-manager/secrets-manager/kubernetes">Docs</a>
+        </div>
+      </div>
+    </div>
+
+    <p class="oci">
+      Charts are also published as OCI artifacts:
+      <code>oci://registry-1.docker.io/keeper/&lt;chart-name&gt;</code>. See ArtifactHub for current versions.
+    </p>
+
+    <footer>
+      <a href="https://github.com/Keeper-Security/helm-charts">GitHub</a>
+      <a href="https://artifacthub.io/packages/search?repo=keeper-security">ArtifactHub</a>
+      <a href="https://docs.keeper.io/keeperpam">Keeper Docs</a>
+      <a href="https://www.keepersecurity.com">keepersecurity.com</a>
+    </footer>
+  </div>
+</body>
+</html>
