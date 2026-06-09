@@ -148,7 +148,7 @@ Supported formats: `text`, `json`, `logfmt`, `cef`, `leef`, `rfc5424`, `rfc3164`
 
 See the [Logging reference](#logging) below for all options including syslog forwarding.
 
-> **Note**: Structured log formats (`json`, `logfmt`, `cef`, etc.) require gateway 1.8.0+. If using the default chart appVersion (1.7.6), override the image tag: `--set image.tag=1.8.0` or later.
+> **Note**: Structured log formats (`json`, `logfmt`, `cef`, etc.) require gateway 1.8.0 or later. The chart's default `appVersion` already meets this; only override `image.tag` if you pin an older gateway image.
 
 ### Demo / Playground Services
 
