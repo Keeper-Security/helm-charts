@@ -4,7 +4,7 @@ Automatically inject secrets from [Keeper Secrets Manager](https://www.keepersec
 
 ## Features
 
-- **No Kubernetes Secrets created** - Secrets are written directly to pod tmpfs (memory-only)
+- **No Kubernetes Secrets by default** - Secrets are written directly to pod tmpfs (memory-only); an optional **Kubernetes Secret mode** can create a native `Secret` when an app needs one (e.g., env vars)
 - **Pod-scoped lifetime** - Secrets are removed when pod terminates
 - **Automatic rotation** - Sidecar refreshes secrets without pod restarts
 - **Simple configuration** - Just two annotations to get started
@@ -62,7 +62,7 @@ metadata:
   name: my-app
   annotations:
     keeper.security/inject: "true"
-    keeper.security/auth-secret: "keeper-credentials"
+    keeper.security/ksm-config: "keeper-credentials"
     keeper.security/secret: "database-credentials"
 spec:
   containers:
@@ -81,28 +81,28 @@ Secrets will be available at `/keeper/secrets/database-credentials.json`.
 | `replicaCount` | Number of webhook replicas | `2` |
 | `image.repository` | Webhook image | `keeper/injector-webhook` |
 | `image.tag` | Image tag | Chart appVersion |
-| `sidecar.image.repository` | Sidecar image | `keeper/injector-sidecar` |
-| `sidecar.image.tag` | Sidecar image tag | Chart appVersion |
+| `sidecar.repository` | Sidecar image | `keeper/injector-sidecar` |
+| `sidecar.tag` | Sidecar image tag | Chart appVersion |
 | `metrics.enabled` | Enable Prometheus metrics | `true` |
 | `tls.autoGenerate` | Auto-generate TLS certificates | `true` |
 | `tls.certManager.enabled` | Use cert-manager (optional) | `false` |
 
 ### Full Configuration
 
-See [values.yaml](https://github.com/Keeper-Security/keeper-k8s-injector/blob/main/charts/keeper-injector/values.yaml) for all options.
+See [values.yaml](https://github.com/Keeper-Security/helm-charts/blob/main/charts/keeper-injector/values.yaml) for all options.
 
 ## Common Annotations
 
 | Annotation | Description | Example |
 |------------|-------------|---------|
 | `keeper.security/inject` | Enable injection | `"true"` |
-| `keeper.security/auth-secret` | K8s secret with KSM config | `"keeper-credentials"` |
+| `keeper.security/ksm-config` | K8s secret with KSM config (key `config`) | `"keeper-credentials"` |
 | `keeper.security/secret` | Secret title in Keeper | `"my-secret"` |
 | `keeper.security/secrets` | Multiple secrets (comma-separated) | `"db-creds, api-keys"` |
 | `keeper.security/refresh-interval` | Rotation interval | `"5m"` |
 | `keeper.security/signal` | Signal on refresh | `"SIGHUP"` |
 
-[Full annotation reference](https://github.com/Keeper-Security/keeper-k8s-injector/blob/main/docs/annotations.md)
+[Full annotation reference](https://github.com/Keeper-Security/keeper-k8s-injector/blob/main/docs/INDEX.md)
 
 ## Examples
 
@@ -136,9 +136,9 @@ Try these working examples:
 
 | Feature | Keeper Injector | ESO |
 |---------|-----------------|-----|
-| Creates K8s Secrets | No | Yes |
-| Secret storage | Pod tmpfs (memory) | etcd |
-| Secrets in etcd backups | No | Yes |
+| Creates K8s Secrets | Optional (default: no) | Yes |
+| Secret storage | Pod tmpfs (memory), or K8s Secret if opted in | etcd |
+| Secrets in etcd backups | No (default) | Yes |
 | Configuration | Annotations | CRDs |
 | Runtime rotation | Yes (sidecar) | Sync interval |
 | Pod isolation | Yes | Shared secrets |

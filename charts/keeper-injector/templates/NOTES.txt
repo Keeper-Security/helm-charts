@@ -26,20 +26,21 @@ TLS: Manual certificates provided
 {{- end }}
 
 Secrets will be written to: /keeper/secrets/
-Format: JSON (default) or configurable via annotations
-Example: /keeper/secrets/database-credentials.json
+Default format: JSON. Example: /keeper/secrets/database-credentials.json
 
-Available formats:
-- JSON (default): keeper.security/format: "json"
-- Environment: keeper.security/format: "env"
-- YAML: keeper.security/format: "yaml"
-- Properties: keeper.security/format: "properties"
-- Custom: keeper.security/template: "your-template"
+Output formats (json, env, yaml, properties, ini, raw) and Go templates are set
+per-secret in the keeper.security/config block, e.g.:
+
+   keeper.security/config: |
+     secrets:
+       - record: database-credentials
+         path: /keeper/secrets/db.env
+         format: env
 
 Next Steps:
-1. Create a Kubernetes secret with your KSM configuration:
+1. Create a Kubernetes secret with your KSM configuration (key must be "config"):
 
-   kubectl create secret generic keeper-auth \
+   kubectl create secret generic keeper-credentials \
      --from-literal=config='<base64-ksm-config>' \
      --namespace <your-namespace>
 
@@ -50,7 +51,7 @@ Next Steps:
    metadata:
      annotations:
        keeper.security/inject: "true"
-       keeper.security/auth-secret: "keeper-auth"
+       keeper.security/ksm-config: "keeper-credentials"
        keeper.security/secret: "your-secret-title"
 
 For more information:
