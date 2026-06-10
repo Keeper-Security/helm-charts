@@ -2,8 +2,8 @@ apiVersion: v2
 name: keeper-injector
 description: Keeper Secrets Manager Kubernetes Injector - Inject secrets into pods at runtime
 type: application
-version: 0.11.0
-appVersion: "0.11.0"
+version: 0.11.1
+appVersion: "0.11.1"
 kubeVersion: ">=1.21.0-0"
 home: https://www.keepersecurity.com
 icon: https://keepersecurity.com/vault/images/keeper_icons/icon_rounded_256.png
@@ -37,15 +37,7 @@ annotations:
     - name: Support
       url: https://github.com/Keeper-Security/keeper-k8s-injector/issues
   artifacthub.io/changes: |
-    - kind: fixed
-      description: Go templates (Sprig) in the keeper.security/config block now render correctly (were silently dropped and fell back to JSON)
-    - kind: fixed
-      description: Kubernetes Secret injection now works with default settings; the owner reference no longer causes the pod to be rejected at admission
-    - kind: fixed
-      description: keeper.security/signal no longer crashes the sidecar
-    - kind: fixed
-      description: Cloud auth (AWS/GCP/Azure) pods now deploy with file-based injection (the empty auth Secret reference is no longer injected)
     - kind: security
-      description: Reject cross-namespace Kubernetes Secret writes and validate keeper.security/auth-method at admission
-    - kind: changed
-      description: Injected files are now mode 0440 (group-readable via pod fsGroup); the default K8s Secret no longer sets a pod owner reference, so it is not auto-deleted on pod termination
+      description: Update google.golang.org/grpc to 1.81.1 to fix a critical authorization-bypass advisory
+    - kind: security
+      description: Update go.opentelemetry.io/otel to 1.44.0 to fix a high-severity baggage-header DoS advisory
