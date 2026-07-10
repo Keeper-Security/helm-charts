@@ -2,8 +2,8 @@ apiVersion: v2
 name: keeper-injector
 description: Keeper Secrets Manager Kubernetes Injector - Inject secrets into pods at runtime
 type: application
-version: 0.11.1
-appVersion: "0.11.1"
+version: 0.11.2
+appVersion: "0.11.2"
 kubeVersion: ">=1.21.0-0"
 home: https://www.keepersecurity.com
 icon: https://keepersecurity.com/vault/images/keeper_icons/icon_rounded_256.png
@@ -38,6 +38,6 @@ annotations:
       url: https://github.com/Keeper-Security/keeper-k8s-injector/issues
   artifacthub.io/changes: |
     - kind: security
-      description: Update google.golang.org/grpc to 1.81.1 to fix a critical authorization-bypass advisory
+      description: Update golang.org/x/crypto to 0.52.0 to fix multiple SSH advisories
     - kind: security
-      description: Update go.opentelemetry.io/otel to 1.44.0 to fix a high-severity baggage-header DoS advisory
+      description: Update golang.org/x/net to 0.55.0 to fix an HTML parser denial-of-service advisory
