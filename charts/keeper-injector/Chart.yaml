@@ -2,8 +2,8 @@ apiVersion: v2
 name: keeper-injector
 description: Keeper Secrets Manager Kubernetes Injector - Inject secrets into pods at runtime
 type: application
-version: 0.11.2
-appVersion: "0.11.2"
+version: 0.11.3
+appVersion: "0.11.3"
 kubeVersion: ">=1.21.0-0"
 home: https://www.keepersecurity.com
 icon: https://keepersecurity.com/vault/images/keeper_icons/icon_rounded_256.png
@@ -38,6 +38,12 @@ annotations:
       url: https://github.com/Keeper-Security/keeper-k8s-injector/issues
   artifacthub.io/changes: |
     - kind: security
-      description: Update golang.org/x/crypto to 0.52.0 to fix multiple SSH advisories
+      description: Reject a pod whose declared namespace disagrees with the admission request's namespace, closing a cross-namespace Secret read/write and an ExcludedNamespaces bypass
     - kind: security
-      description: Update golang.org/x/net to 0.55.0 to fix an HTML parser denial-of-service advisory
+      description: Stop returning the real mutation error to the webhook caller, closing a cross-namespace Secret-existence oracle
+    - kind: security
+      description: Return an error instead of panicking when a KSM config fails to initialize
+    - kind: security
+      description: Update google.golang.org/grpc to 1.82.1 (GHSA-hrxh-6v49-42gf)
+    - kind: fixed
+      description: Exclude the release namespace from the webhook's namespaceSelector so a fresh install can't deadlock on itself
