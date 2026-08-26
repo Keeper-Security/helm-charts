@@ -37,10 +37,17 @@ webhooks:
     sideEffects: None
     timeoutSeconds: {{ .Values.webhook.timeoutSeconds }}
     namespaceSelector:
-      {{- with .Values.namespaceSelector.matchExpressions }}
       matchExpressions:
+        # Never intercept creation of the injector's own pods, regardless of the
+        # matchExpressions below: without this, a fresh install can deadlock (its own
+        # webhook blocks its own pods from ever being created).
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+            - {{ .Release.Namespace }}
+        {{- with .Values.namespaceSelector.matchExpressions }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
     objectSelector:
       matchExpressions:
         - key: keeper.security/inject

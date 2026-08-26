@@ -6,7 +6,7 @@ Official Helm charts for deploying Keeper Security products on Kubernetes.
 
 | Chart | Description | Version |
 |-------|-------------|---------|
-| [keeper-injector](charts/keeper-injector/) | Keeper Secrets Manager Kubernetes Injector | 0.11.2 |
+| [keeper-injector](charts/keeper-injector/) | Keeper Secrets Manager Kubernetes Injector | 0.11.3 |
 | [keeper-gateway](charts/keeper-gateway/) | Keeper PAM Gateway | 0.2.2 |
 
 ## Usage
