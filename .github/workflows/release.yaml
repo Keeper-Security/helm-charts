@@ -28,7 +28,7 @@ on:
 jobs:
   lint:
     name: Lint Charts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -60,7 +60,7 @@ jobs:
 
   release:
     name: Release Charts
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [lint]
     if: github.event_name == 'push'
     environment: prod
@@ -94,11 +94,14 @@ jobs:
               fi
             fi
           done
-          echo "charts=${CHANGED_CHARTS}" >> ${GITHUB_OUTPUT}
+          echo "charts=${CHANGED_CHARTS}" >> "${GITHUB_OUTPUT}"
           echo "Changed charts: ${CHANGED_CHARTS}"
 
       - name: Package and push changed charts
         if: steps.changed.outputs.charts != ''
+        env:
+          # keeper-gateway is distributed through the GitHub Pages Helm repository only
+          OCI_SKIP_CHARTS: "keeper-gateway"
         run: |
           mkdir -p .helm-packages
           for chart_name in ${{ steps.changed.outputs.charts }}; do
@@ -107,8 +110,12 @@ jobs:
             helm package "${chart_dir}" -d .helm-packages
 
             version=$(grep '^version:' "${chart_dir}/Chart.yaml" | awk '{print $2}')
+            if [[ " ${OCI_SKIP_CHARTS} " == *" ${chart_name} "* ]]; then
+              echo "=== Skipping OCI push for ${chart_name} (Helm repository only) ==="
+              continue
+            fi
             echo "=== Pushing ${chart_name} v${version} to OCI ==="
-            helm push ".helm-packages/${chart_name}-${version}.tgz" oci://registry-1.docker.io/keeper || true
+            helm push ".helm-packages/${chart_name}-${version}.tgz" oci://registry-1.docker.io/keeper
           done
 
       - name: Checkout gh-pages branch
