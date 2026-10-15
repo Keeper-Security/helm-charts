@@ -7,11 +7,13 @@ Official Helm charts for deploying Keeper Security products on Kubernetes.
 | Chart | Description | Version |
 |-------|-------------|---------|
 | [keeper-injector](charts/keeper-injector/) | Keeper Secrets Manager Kubernetes Injector | 0.11.3 |
-| [keeper-gateway](charts/keeper-gateway/) | Keeper PAM Gateway | 0.2.2 |
+| [keeper-gateway](charts/keeper-gateway/) | Keeper PAM Gateway | 0.2.5 |
 
 ## Usage
 
 ### OCI Registry (Docker Hub)
+
+Available for `keeper-injector`. `keeper-gateway` is published through the Helm repository below.
 
 ```bash
 helm install keeper-injector oci://registry-1.docker.io/keeper/keeper-injector \
@@ -27,6 +29,11 @@ helm repo update
 helm install keeper-injector keeper/keeper-injector \
   --namespace keeper-security \
   --create-namespace
+helm install keeper-gateway keeper/keeper-gateway \
+  --namespace keeper-gateway \
+  --create-namespace \
+  --set gateway.acceptEula=Y \
+  --set gateway.config='<base64-config-from-keeper>'
 ```
 
 ## Contributing
@@ -42,10 +49,18 @@ Each chart has its own README with detailed configuration options. See the chart
 
 ## Release Process
 
-Charts are released automatically when changes are pushed to `main`:
+Charts are released automatically when changes are pushed to `main`. There is no tag or GitHub release.
 
-1. The CI workflow detects which charts have version changes
-2. Changed charts are packaged and pushed to Docker Hub OCI registry
+To release a chart, bump in one pull request:
+
+- `version` and, if the app changed, `appVersion` in the chart's `Chart.yaml`
+- the `artifacthub.io/changes` annotation in the same file
+- the chart's version in the table at the top of this README (CI fails if it does not match)
+
+On merge:
+
+1. The CI workflow detects which charts changed
+2. Changed charts are packaged; `keeper-injector` is pushed to the Docker Hub OCI registry
 3. The GitHub Pages Helm repository index is updated
 4. ArtifactHub syncs automatically from GitHub Pages
 
