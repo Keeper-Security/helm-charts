@@ -5,7 +5,7 @@
 #   - Push to main: detect changed charts, package, and publish
 #
 # PUBLISHED ARTIFACTS:
-#   - Helm OCI: oci://registry-1.docker.io/keeper/<chart-name>
+#   - Helm OCI: oci://registry-1.docker.io/keeper/<chart-name> (except keeper-gateway)
 #   - Helm HTTP: https://keeper-security.github.io/helm-charts
 #   - ArtifactHub: auto-syncs from GitHub Pages
 #
@@ -48,6 +48,21 @@ jobs:
               helm lint "${chart}"
             fi
           done
+
+      - name: Check README chart versions
+        run: |
+          status=0
+          for chart in charts/*/; do
+            if [ -f "${chart}/Chart.yaml" ]; then
+              chart_name=$(basename "${chart}")
+              version=$(grep '^version:' "${chart}/Chart.yaml" | awk '{print $2}')
+              if ! grep -Eq "^\| \[${chart_name}\]\(.*\| ${version} \|$" README.md; then
+                echo "::error file=README.md::${chart_name} is ${version} in Chart.yaml; update the chart table in README.md"
+                status=1
+              fi
+            fi
+          done
+          exit "${status}"
 
       - name: Validate templates
         run: |
