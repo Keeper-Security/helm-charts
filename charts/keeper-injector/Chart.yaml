@@ -2,8 +2,8 @@ apiVersion: v2
 name: keeper-injector
 description: Keeper Secrets Manager Kubernetes Injector - Inject secrets into pods at runtime
 type: application
-version: 0.11.3
-appVersion: "0.11.3"
+version: 0.12.0
+appVersion: "0.12.0"
 kubeVersion: ">=1.21.0-0"
 home: https://www.keepersecurity.com
 icon: https://keepersecurity.com/vault/images/keeper_icons/icon_rounded_256.png
@@ -37,13 +37,13 @@ annotations:
     - name: Support
       url: https://github.com/Keeper-Security/keeper-k8s-injector/issues
   artifacthub.io/changes: |
-    - kind: security
-      description: Reject a pod whose declared namespace disagrees with the admission request's namespace, closing a cross-namespace Secret read/write and an ExcludedNamespaces bypass
-    - kind: security
-      description: Stop returning the real mutation error to the webhook caller, closing a cross-namespace Secret-existence oracle
-    - kind: security
-      description: Return an error instead of panicking when a KSM config fails to initialize
-    - kind: security
-      description: Update google.golang.org/grpc to 1.82.1 (GHSA-hrxh-6v49-42gf)
+    - kind: added
+      description: keeper.security/health-port annotation for the sidecar's health and metrics server
     - kind: fixed
-      description: Exclude the release namespace from the webhook's namespaceSelector so a fresh install can't deadlock on itself
+      description: The sidecar no longer shares port 8080 with an application container that declares it
+    - kind: fixed
+      description: keeper.security/auth-secret (the pre-0.10.0 name) is read again when keeper.security/ksm-config is not set
+    - kind: security
+      description: Update google.golang.org/grpc to 1.83.2 (GHSA-2v4p-qf9q-27wj, GHSA-vp52-pcj8-j9qc, GHSA-qc2q-p7wx-3px3)
+    - kind: security
+      description: Update go.opentelemetry.io/otel/sdk to 1.45.0 (GHSA-8wmf-6v46-5gfg)
