@@ -1,0 +1,51 @@
+# Deploy GitHub Pages (the Helm HTTP repository) from the gh-pages branch.
+#
+# Replaces GitHub's legacy "pages build and deployment" run, whose built-in
+# actions target Node.js 20 and the ubuntu-latest label. Release Charts
+# pushes the updated index and packages to gh-pages; this workflow then
+# publishes that branch as-is. It can also be run manually.
+#
+# Requires Settings > Pages > Source = "GitHub Actions", and `main` allowed
+# in the github-pages environment's deployment branches.
+
+name: Deploy Pages
+
+on:
+  workflow_run:
+    workflows: ["Release Charts"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Checkout gh-pages
+        uses: actions/checkout@v6
+        with:
+          ref: gh-pages
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
