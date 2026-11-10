@@ -7,7 +7,7 @@
 # PUBLISHED ARTIFACTS:
 #   - Helm OCI: oci://registry-1.docker.io/keeper/<chart-name> (except keeper-gateway)
 #   - Helm HTTP: https://keeper-security.github.io/helm-charts
-#   - ArtifactHub: auto-syncs from GitHub Pages
+#   - ArtifactHub: auto-syncs from GitHub Pages (deployed by pages.yaml)
 #
 # REQUIRED SECRETS (in prod environment):
 #   - DOCKERHUB_USERNAME
