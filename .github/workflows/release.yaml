@@ -3,6 +3,8 @@
 # WORKFLOW LOGIC:
 #   - Pull Request: lint and validate charts
 #   - Push to main: detect changed charts, package, and publish
+#   - Manual run: republish the named charts to the Helm HTTP repository (gh-pages)
+#     only, without pushing to OCI, e.g. to backfill a version whose index update failed
 #
 # PUBLISHED ARTIFACTS:
 #   - Helm OCI: oci://registry-1.docker.io/keeper/<chart-name> (except keeper-gateway)
@@ -24,6 +26,11 @@ on:
     branches: [main]
     paths:
       - "charts/**"
+  workflow_dispatch:
+    inputs:
+      charts:
+        description: "Space-separated chart names to republish to gh-pages (no OCI push)"
+        required: true
 
 jobs:
   lint:
@@ -77,7 +84,7 @@ jobs:
     name: Release Charts
     runs-on: ubuntu-24.04
     needs: [lint]
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     environment: prod
     permissions:
       contents: write
@@ -99,7 +106,20 @@ jobs:
 
       - name: Detect changed charts
         id: changed
+        env:
+          INPUT_CHARTS: ${{ inputs.charts }}
         run: |
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            for chart_name in ${INPUT_CHARTS}; do
+              if [[ ! "${chart_name}" =~ ^[a-z0-9-]+$ ]] || [ ! -f "charts/${chart_name}/Chart.yaml" ]; then
+                echo "::error::unknown chart: ${chart_name}"
+                exit 1
+              fi
+            done
+            echo "charts=${INPUT_CHARTS}" >> "${GITHUB_OUTPUT}"
+            echo "Republishing to gh-pages: ${INPUT_CHARTS}"
+            exit 0
+          fi
           CHANGED_CHARTS=""
           for chart in charts/*/; do
             if [ -f "${chart}/Chart.yaml" ]; then
@@ -125,6 +145,10 @@ jobs:
             helm package "${chart_dir}" -d .helm-packages
 
             version=$(grep '^version:' "${chart_dir}/Chart.yaml" | awk '{print $2}')
+            if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+              echo "=== Manual run: skipping OCI push for ${chart_name} ==="
+              continue
+            fi
             if [[ " ${OCI_SKIP_CHARTS} " == *" ${chart_name} "* ]]; then
               echo "=== Skipping OCI push for ${chart_name} (Helm repository only) ==="
               continue
@@ -147,12 +171,37 @@ jobs:
           cd gh-pages
           helm repo index . --url https://keeper-security.github.io/helm-charts --merge index.yaml 2>/dev/null || helm repo index . --url https://keeper-security.github.io/helm-charts
 
+      # The org ruleset requires verified signatures on gh-pages, and a plain `git push` from
+      # the runner is unsigned. Commits created through the API with the workflow token are
+      # signed by GitHub, so build the commit from blobs and a tree and move the ref.
       - name: Push to gh-pages
         if: steps.changed.outputs.charts != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
         run: |
+          set -o pipefail
           cd gh-pages
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
-          git diff --staged --quiet || git commit -m "Update Helm repository index"
-          git push
+          if git diff --staged --quiet; then
+            echo "Helm repository index unchanged"
+            exit 0
+          fi
+          parent=$(git rev-parse HEAD)
+          base_tree=$(git rev-parse "HEAD^{tree}")
+          entries='[]'
+          while IFS= read -r -d '' path; do
+            if [ -f "${path}" ]; then
+              sha=$(base64 -w0 "${path}" | jq -Rs '{content: ., encoding: "base64"}' \
+                | gh api "repos/${REPO}/git/blobs" --input - --jq .sha)
+              entries=$(jq -c --arg p "${path}" --arg s "${sha}" '. + [{path: $p, mode: "100644", type: "blob", sha: $s}]' <<<"${entries}")
+            else
+              entries=$(jq -c --arg p "${path}" '. + [{path: $p, mode: "100644", type: "blob", sha: null}]' <<<"${entries}")
+            fi
+          done < <(git diff --staged --name-only -z)
+          tree=$(jq -n --arg b "${base_tree}" --argjson t "${entries}" '{base_tree: $b, tree: $t}' \
+            | gh api "repos/${REPO}/git/trees" --input - --jq .sha)
+          commit=$(jq -n --arg t "${tree}" --arg p "${parent}" '{message: "Update Helm repository index", tree: $t, parents: [$p]}' \
+            | gh api "repos/${REPO}/git/commits" --input - --jq .sha)
+          gh api -X PATCH "repos/${REPO}/git/refs/heads/gh-pages" -f sha="${commit}" -F force=false > /dev/null
+          echo "gh-pages -> ${commit} (verified: $(gh api "repos/${REPO}/commits/${commit}" --jq .commit.verification.verified))"
